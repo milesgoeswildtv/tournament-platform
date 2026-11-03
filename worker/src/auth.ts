@@ -16,6 +16,8 @@ export interface UserRow {
   is_admin: number;
   created_at: number;
   merged_into?: string | null;
+  discord_id?: string | null;
+  discord_username?: string | null;
 }
 
 export interface AuthUser {
@@ -25,6 +27,7 @@ export interface AuthUser {
   name: string;
   isAdmin: boolean;
   telegram: boolean;
+  discord: boolean;
   createdAt: number;
 }
 
@@ -35,6 +38,7 @@ export const publicUser = (u: UserRow): AuthUser => ({
   name: u.display_name,
   isAdmin: !!u.is_admin,
   telegram: !!u.telegram_id,
+  discord: !!u.discord_id,
   createdAt: u.created_at,
 });
 
@@ -67,7 +71,7 @@ export async function optionalUser(c: RouteCtx): Promise<UserRow | null> {
   return userFromToken(c.env, bearer(c.req));
 }
 
-async function createSession(env: Env, userId: string, ua: string | null) {
+export async function createSession(env: Env, userId: string, ua: string | null) {
   const token = b64url(randomBytes(32));
   const t = now();
   await env.DB.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at, user_agent) VALUES (?, ?, ?, ?, ?)')
@@ -76,7 +80,7 @@ async function createSession(env: Env, userId: string, ua: string | null) {
   return token;
 }
 
-async function uniqueTag(env: Env): Promise<string> {
+export async function uniqueTag(env: Env): Promise<string> {
   for (let i = 0; i < 8; i++) {
     const tag = newTag();
     const hit = await env.DB.prepare('SELECT 1 FROM users WHERE tag = ?').bind(tag).first();

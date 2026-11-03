@@ -18,6 +18,9 @@
 .authFacts li { color: var(--dust); font-size: var(--t-sm); padding-left: var(--s-3); border-left: 2px solid var(--steel); }
 .authFacts b { color: var(--chalk); font-weight: 600; }
 .authForm { display: grid; gap: var(--s-4); }
+.providers { display: grid; gap: var(--s-2); }
+.providersRule { display: flex; align-items: center; gap: var(--s-3); font-family: var(--f-cond); font-weight: 600; color: var(--ash); }
+.providersRule::before, .providersRule::after { content: ''; flex: 1; height: 1px; background: var(--steel); }
 .authFoot { font-size: var(--t-sm); color: var(--ash); }
 
 /* ------------------------------------------------------------ hub */

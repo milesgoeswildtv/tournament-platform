@@ -25,6 +25,8 @@ Last updated: 2026-11-03.
   - API (Worker + Durable Object): https://tournament-platform-api.afterdarklabs.workers.dev (`/api/health` reports `telegram: true`)
   - D1 database `tournament-platform` (`313336d1-b81f-4eb3-9aef-cc99cd32fc02`, ENAM)
 
+- **Discord sign-in (OAuth2 authorization code, `worker/src/discord.ts`, migration `0003`).** Continue with Discord on the login screen; Link Discord in Settings. The SHYST player is the identity and Discord is attached by its user id (never the username). An unknown Discord account gets no player until the person chooses "Create my SHYST player" or "I already play on SHYST" (sign in, then it links). Collisions are refused and logged, never merged or overwritten; Telegram and Discord coexist on one player. Access tokens are revoked right after reading the id; nothing else is stored. Session tokens never appear in URLs (one-time ticket in the fragment). **Needs owner credentials to go live** (see Blockers).
+
 ## Test results (local)
 
 | Suite | Result |
@@ -60,6 +62,8 @@ All of the above also run in GitHub Actions on every push.
 ## Blockers / required owner actions
 
 None are blocking. Cloudflare and Telegram secrets are in place, and deploys run from `main`.
+
+0. **Discord (required for Discord sign-in):** in the [Discord Developer Portal](https://discord.com/developers/applications) create an application → *OAuth2*: copy the **Client ID** and **Client Secret**, and add the redirect `https://tournament-platform-api.afterdarklabs.workers.dev/api/auth/discord/callback`. Add GitHub secrets `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`, then re-run *CI / Deploy*. Until then the Discord buttons stay hidden and `/api/auth/providers` reports `discord: false`.
 
 1. **Recommended:** open the bot in Telegram on your phone, tap the Mini App button and play a short tournament with a second account, to confirm the in-Telegram experience end to end.
 2. **Optional:** set `ADMIN_HANDLES` in `wrangler.jsonc` to your username to get the admin page.

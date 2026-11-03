@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ApiError, get, patch, post, setSession, updateUser, useSession, type User } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { setPrefs, usePrefs } from '../lib/prefs';
 import { audio } from '../lib/audio';
-import { navigate } from '../lib/router';
+import { navigate, useLocation } from '../lib/router';
+import { DISCORD_RESULT, startDiscord } from '../lib/discord';
 import { toast } from '../lib/toast';
 import { openTelegram, reserveTab } from '../lib/telegram';
 import { Button, Field, Segmented, TextInput, Toggle, fieldStyles } from '../ui/controls';
@@ -13,7 +14,15 @@ import sc from './screens.module.css';
 export function SettingsScreen() {
   const session = useSession();
   const prefs = usePrefs();
-  const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null } }>('/api/me'));
+  const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null } }>('/api/me'));
+  const { search } = useLocation();
+  const discordNote = DISCORD_RESULT[search.get('discord') ?? ''];
+  useEffect(() => {
+    if (!discordNote) return;
+    toast(discordNote.text, discordNote.tone);
+    navigate('/settings', { replace: true });
+  }, [discordNote]);
+  const [dBusy, setDBusy] = useState(false);
   const [linking, setLinking] = useState(false);
   const [name, setName] = useState(session?.user.name ?? '');
   const [busy, setBusy] = useState(false);
@@ -140,6 +149,42 @@ export function SettingsScreen() {
             {tg.configured && !tg.linked && (
               <Button variant="ghost" size="sm" icon="refresh" onClick={() => me.reload()}>
                 I tapped Start, check again
+              </Button>
+            )}
+          </Stack>
+        ) : null}
+      </Section>
+
+      <Section title="Discord">
+        {me.data?.discord ? (
+          <Stack gap={2}>
+            <Chip tone={me.data.discord.linked ? 'go' : me.data.discord.configured ? 'info' : 'muted'}>
+              {me.data.discord.linked ? 'Linked' : me.data.discord.configured ? 'Not linked' : 'Not set up on this server'}
+            </Chip>
+            <Text tone="dust">
+              {me.data.discord.linked
+                ? `${me.data.discord.username ? `@${me.data.discord.username}` : 'Your Discord account'} signs in as this player, #${session.user.tag}.`
+                : me.data.discord.configured
+                  ? `Link Discord to sign in with it as this same player, #${session.user.tag}. Nothing about your history changes.`
+                  : 'The operator hasn’t connected a Discord app yet.'}
+            </Text>
+            {me.data.discord.configured && !me.data.discord.linked && (
+              <Button
+                icon="discord"
+                busy={dBusy}
+                onClick={async () => {
+                  setDBusy(true);
+                  try {
+                    const r = await startDiscord('link', '/settings');
+                    if (r.linked) await me.reload();
+                  } catch (e2) {
+                    toast((e2 as ApiError).message, 'error');
+                  } finally {
+                    setDBusy(false);
+                  }
+                }}
+              >
+                Link Discord
               </Button>
             )}
           </Stack>

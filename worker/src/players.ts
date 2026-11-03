@@ -1,3 +1,4 @@
+import { discordConfigured } from './discord';
 import { publicUser, requireUser, type UserRow } from './auth';
 import { HttpError, json, type RouteCtx } from './http';
 
@@ -45,6 +46,7 @@ export async function me(c: RouteCtx): Promise<Response> {
     stats: await stats(c, u.id),
     unread: unread?.n ?? 0,
     telegram: { configured: !!c.env.TELEGRAM_BOT_TOKEN, bot: c.env.TELEGRAM_BOT_USERNAME ?? null, linked: !!u.telegram_id, username: u.telegram_username ?? null },
+    discord: { configured: discordConfigured(c.env), linked: !!u.discord_id, username: u.discord_username ?? null },
   });
 }
 
@@ -61,7 +63,7 @@ export async function playerProfile(c: RouteCtx): Promise<Response> {
   )
     .bind(u.id)
     .all();
-  const { id: _id, handle: _h, isAdmin: _a, telegram: _t, ...pub } = publicUser(u);
+  const { id: _id, handle: _h, isAdmin: _a, telegram: _t, discord: _d, ...pub } = publicUser(u);
   return json({ player: pub, stats: await stats(c, u.id), history: history.results });
 }
 

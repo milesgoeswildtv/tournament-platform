@@ -13,6 +13,7 @@ export interface User {
   name: string;
   isAdmin: boolean;
   telegram: boolean;
+  discord: boolean;
   createdAt: number;
 }
 

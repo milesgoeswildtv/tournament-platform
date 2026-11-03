@@ -16,6 +16,14 @@ export interface Env {
   TELEGRAM_WEBHOOK_SECRET?: string;
   /** Short name of the Mini App registered with BotFather (/newapp), used in t.me links. */
   TELEGRAM_MINIAPP_SHORTNAME?: string;
+  /** Discord OAuth2 application (Developer Portal → OAuth2). The secret is a Worker secret, never sent to the browser. */
+  DISCORD_CLIENT_ID?: string;
+  DISCORD_CLIENT_SECRET?: string;
+  /** Must match a redirect registered in the Discord app. Defaults to <this API origin>/api/auth/discord/callback. */
+  DISCORD_REDIRECT_URI?: string;
+  /** Development/tests only (ignored in production): point the OAuth calls at a stand-in Discord. */
+  DISCORD_API_BASE?: string;
+  DISCORD_AUTHORIZE_URL?: string;
 }
 
 export function timeScale(env: Env): number {

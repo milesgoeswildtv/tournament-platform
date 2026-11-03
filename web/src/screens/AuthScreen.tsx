@@ -2,8 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { ApiError, post, setSession, useSession, type User } from '../lib/api';
 import { navigate, useLocation } from '../lib/router';
 import { Button, Segmented, TextInput } from '../ui/controls';
-import { Text } from '../ui/layout';
+import { Note, Text } from '../ui/layout';
 import { TapeMark } from '../ui/venue';
+import { DISCORD_RESULT, completeDiscord, startDiscord } from '../lib/discord';
+import { get } from '../lib/api';
+import { useLoad } from '../lib/useLoad';
+import { toast } from '../lib/toast';
 import { inTelegram, linkInMiniApp } from '../lib/telegram';
 import s from './screens.module.css';
 
@@ -17,6 +21,8 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<{ field?: string; message: string } | null>(null);
+  const [discordBusy, setDiscordBusy] = useState(false);
+  const providers = useLoad(() => get<{ discord: boolean; telegram: { enabled: boolean; bot: string | null } }>('/api/auth/providers'));
 
   if (session) {
     queueMicrotask(() => navigate(next, { replace: true }));
@@ -34,6 +40,16 @@ export function AuthScreen() {
           : await post<{ token: string; user: User }>('/api/auth/login', { handle, password });
       setSession({ token: r.token, user: r.user });
       if (inTelegram()) await linkInMiniApp();
+      // "I already play on SHYST" from the Discord return screen: attach that Discord identity now.
+      const pending = search.get('discordPending');
+      if (pending) {
+        try {
+          await completeDiscord(pending, 'link');
+          toast('Discord linked. It now signs you in as this player.', 'good');
+        } catch (e3) {
+          toast((e3 as ApiError).message, 'error');
+        }
+      }
       navigate(next, { replace: true });
     } catch (e2) {
       const a = e2 as ApiError;
@@ -44,6 +60,9 @@ export function AuthScreen() {
   };
 
   const fieldErr = (f: string) => (err && err.field === f ? err.message : null);
+  const p = providers.data;
+  const discordNote = DISCORD_RESULT[search.get('discord') ?? ''];
+  const linkingDiscord = !!search.get('discordPending');
 
   return (
     <main className={s.auth}>
@@ -110,6 +129,39 @@ export function AuthScreen() {
         <Button type="submit" variant="primary" size="lg" block busy={busy} disabled={!handle || password.length < (mode === 'signup' ? 8 : 1)}>
           {mode === 'signup' ? 'Create account' : 'Sign in'}
         </Button>
+        {linkingDiscord && <Note>Sign in to the SHYST player you already have. Your verified Discord account is attached to it as soon as you’re in.</Note>}
+        {discordNote && <Text tone={discordNote.tone === 'good' ? 'go' : 'stop'} role="status">{discordNote.text}</Text>}
+        {p && (p.discord || p.telegram.bot) && !linkingDiscord && (
+          <div className={s.providers}>
+            <span className={s.providersRule}>or</span>
+            {p.discord && (
+              <Button
+                icon="discord"
+                block
+                busy={discordBusy}
+                onClick={async () => {
+                  setDiscordBusy(true);
+                  try {
+                    await startDiscord('login', next);
+                  } catch (e2) {
+                    toast((e2 as ApiError).message, 'error');
+                    setDiscordBusy(false);
+                  }
+                }}
+              >
+                Continue with Discord
+              </Button>
+            )}
+            {p.telegram.bot && !inTelegram() && (
+              <Button icon="telegram" block onClick={() => window.open(`https://t.me/${p.telegram.bot}`, '_blank', 'noopener')}>
+                Play in Telegram
+              </Button>
+            )}
+            <Text tone="ash" size="sm">
+              Discord and Telegram sign you in to one SHYST player. Already have one? Link them in Settings.
+            </Text>
+          </div>
+        )}
         <p className={s.authFoot}>Prize amounts are sponsor commitments recorded by the platform. No money moves through this app.</p>
       </form>
     </main>

@@ -31,6 +31,7 @@ const PATHS: Record<string, string> = {
   exit: 'M10 4H4v16h6M15 8l4 4-4 4M19 12H9',
   bell: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',
   telegram: 'M21 4 3 11l6 2 2 6 3-4 5 4z M9 13l8-6',
+  discord: 'M6 7h12l3 10-4 1.5-2-3H9l-2 3L3 17zM8.5 10.5v3M7 12h3M15.5 11.5h.01M17 13h.01',
   lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
   eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
   up: 'M12 20V5M5 11l7-7 7 7',

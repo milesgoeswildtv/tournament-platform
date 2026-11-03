@@ -5,6 +5,7 @@ import { bootTelegram, inTelegram } from './lib/telegram';
 import { AppShell, OfflineBanner, Toasts } from './ui/shell';
 import { Loading } from './ui/layout';
 import { AuthScreen } from './screens/AuthScreen';
+import { DiscordScreen } from './screens/DiscordScreen';
 import { HubScreen } from './screens/HubScreen';
 import { JoinScreen, InviteScreen } from './screens/JoinScreen';
 import { SponsorScreen } from './screens/SponsorScreen';
@@ -24,6 +25,7 @@ type R = { pattern: string; render: (p: Record<string, string>) => ReactNode; sh
 const ROUTES: R[] = [
   { pattern: '/', render: () => <HubScreen />, shell: true },
   { pattern: '/auth', render: () => <AuthScreen />, public: true },
+  { pattern: '/auth/discord', render: () => <DiscordScreen />, public: true },
   { pattern: '/join', render: () => <JoinScreen />, shell: true },
   { pattern: '/j/:code', render: (p) => <InviteScreen code={p.code} />, shell: true, public: true },
   { pattern: '/sponsor', render: () => <SponsorScreen />, shell: true },
