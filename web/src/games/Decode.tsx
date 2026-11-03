@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Button, TextInput } from '../ui/controls';
+import { Button, TextInput, vars } from '../ui/controls';
 import { Spectating } from './common';
 import { Icon } from '../ui/Icon';
 import type { PlayProps, RevealProps } from './types';
@@ -10,7 +10,7 @@ function Board({ text, open }: { text: string; open?: boolean }) {
   const longest = Math.max(...words.map((w) => w.length));
   const tile = Math.max(20, Math.min(36, Math.floor(320 / Math.max(6, longest))));
   return (
-    <div className={s.board} style={{ ['--tile' as string]: `${tile}px` }} aria-label={open ? text : `Hidden phrase: ${words.length} words`}>
+    <div className={s.board} style={vars({ '--tile': `${tile}px` })} aria-label={open ? text : `Hidden phrase: ${words.length} words`}>
       {words.map((w, i) => (
         <div className={s.word} key={i}>
           {w.split('').map((ch, j) => (

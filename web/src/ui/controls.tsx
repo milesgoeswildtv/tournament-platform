@@ -1,10 +1,13 @@
-import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useId, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import { Link } from '../lib/router';
 import { audio } from '../lib/audio';
 import s from './controls.module.css';
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
+
+/** Inline CSS custom properties (e.g. a game's accent) with regular style props. */
+export const vars = (v: Record<string, string | number>): CSSProperties => v as CSSProperties;
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 

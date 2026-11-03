@@ -1,3 +1,4 @@
+import { vars } from '../ui/controls';
 import { useState } from 'react';
 import { COLORS } from '@shared/client';
 import { audio } from '../lib/audio';
@@ -26,7 +27,7 @@ export function GuessColorPlay({ mine, me, canAct, pending, act }: PlayProps) {
             key={c}
             type="button"
             className={s.can}
-            style={{ ['--c' as string]: CAN[c] }}
+            style={vars({ '--c': CAN[c] })}
             aria-pressed={shown === c}
             disabled={!canAct || !!locked}
             onClick={() => {
@@ -67,7 +68,7 @@ export function GuessColorReveal({ reveal, myId }: RevealProps) {
       </div>
       <div className={s.cans}>
         {COLORS.map((c) => (
-          <div key={c} className={s.can} style={{ ['--c' as string]: CAN[c], maxHeight: 56 }} data-win={c === r.winning}>
+          <div key={c} className={s.can} style={vars({ '--c': CAN[c], maxHeight: 56 })} data-win={c === r.winning}>
             <span className={s.swatch} aria-hidden />
             <span className={s.canName} style={{ fontSize: 'var(--t-xl)' }}>
               {c}

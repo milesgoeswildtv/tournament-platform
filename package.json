@@ -5,21 +5,24 @@
   "type": "module",
   "description": "Competitive tournament platform (working name: NAME TBD).",
   "scripts": {
-    "dev:api": "wrangler dev --local --persist-to .wrangler/state",
+    "dev:api": "wrangler dev --env dev --local --persist-to .wrangler/state",
     "dev:web": "vite --config web/vite.config.ts",
     "dev:local": "node --experimental-sqlite --no-warnings --import tsx dev/server.ts",
-    "build:web": "vite build --config web/vite.config.ts",
-    "build:web:esbuild": "node scripts/build-web.mjs",
+    "build:web": "node scripts/build-web.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "test": "npm run test:unit && npm run test:integration",
     "test:ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-ui.ts",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
-    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:migrate:local": "wrangler d1 migrations apply tournament-platform-dev --local --env dev --persist-to .wrangler/state",
+    "db:migrate:remote": "wrangler d1 migrations apply tournament-platform --remote",
     "deploy:api": "wrangler deploy",
-    "deploy:web": "npm run build:web && wrangler pages deploy web/dist --project-name tournament-platform --cwd web",
+    "deploy:web": "npm run build:web && wrangler pages deploy web/dist --project-name tournament-platform",
     "telegram:setup": "node scripts/telegram-setup.mjs",
-    "test:unit": "node --experimental-sqlite --no-warnings --import tsx --test tests/games.test.ts tests/results.test.ts tests/room.test.ts",
-    "test:integration": "node --experimental-sqlite --no-warnings --import tsx --test --test-concurrency=1 tests/integration.test.ts"
+    "test:unit": "node --experimental-sqlite --no-warnings --import tsx --test tests/games.test.ts tests/results.test.ts tests/room.test.ts tests/telegram.test.ts",
+    "test:integration": "node --experimental-sqlite --no-warnings --import tsx --test --test-concurrency=1 tests/integration.test.ts",
+    "build:web:vite": "vite build --config web/vite.config.ts",
+    "typecheck:offline": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.local.json --noEmit",
+    "test:all": "npm run test:unit && npm run test:integration && npm run build:web && npm run test:ui",
+    "shots": "node --experimental-sqlite --no-warnings --import tsx scripts/shots.ts"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -32,12 +35,12 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^5.0.0",
     "esbuild": "^0.25.0",
-    "playwright-core": "^1.50.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vite": "^7.0.0",
     "wrangler": "^4.40.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "playwright": "^1.50.0"
   },
   "engines": {
     "node": ">=22.5"
