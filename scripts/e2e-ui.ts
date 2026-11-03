@@ -35,7 +35,8 @@ const log = (...a: unknown[]) => console.log(`[${((Date.now() - t0) / 1000).toFi
 
 const server = await startDevServer({ quiet: true, timeScale: SCALE });
 const browser = await chromium.launch();
-const device = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+const [vw, vh] = (process.env.VIEWPORT ?? '390x844').split('x').map(Number);
+const device = { viewport: { width: vw, height: vh }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const errors: string[] = [];
 const shots = new Set<string>();
 
@@ -49,10 +50,32 @@ async function open(label: string) {
   return page;
 }
 
+const overflow: string[] = [];
 async function shot(page: Page, name: string, full = false) {
   if (shots.has(name)) return;
   shots.add(name);
   await page.screenshot({ path: `${OUT}e2e-${name}.png`, fullPage: full }).catch(() => {});
+  // Layout check: nothing may push the page wider than the phone.
+  const wide = await page
+    .evaluate(() => {
+      const w = document.documentElement.clientWidth;
+      if (document.documentElement.scrollWidth <= w) return null;
+      const bad = [...document.querySelectorAll('body *')]
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+          if (r.right <= w + 1 || getComputedStyle(e).position === 'fixed') return false;
+          for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) {
+            const ox = getComputedStyle(p).overflowX;
+            if (ox === 'auto' || ox === 'scroll' || ox === 'hidden') return false;
+          }
+          return true;
+        })
+        .slice(0, 3)
+        .map((e) => `${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]} (${Math.round(e.getBoundingClientRect().right)}px)`);
+      return `${document.documentElement.scrollWidth}px > ${w}px: ${bad.join(', ')}`;
+    })
+    .catch(() => null);
+  if (wide) overflow.push(`${name}: ${wide}`);
 }
 
 async function signUp(page: Page, handle: string, name: string) {
@@ -242,8 +265,8 @@ log('tournament finished in the browser');
 // ------------------------------------------------------------------ results
 
 for (const p of [A, B]) {
-  await p.getByText('Final standings').waitFor();
-  await p.getByText('Prize allocation').waitFor();
+  await p.getByRole('heading', { name: 'Standings' }).waitFor();
+  await p.getByRole('heading', { name: 'Prizes' }).waitFor();
 }
 await shot(A, '40-final-host', true);
 await shot(B, '41-final-player', true);
@@ -278,6 +301,10 @@ await C.disconnect();
 await browser.close();
 await server.close();
 
+if (overflow.length) {
+  console.error(`horizontal overflow:\n  ${overflow.join('\n  ')}`);
+  errors.push(...overflow);
+}
 if (errors.length) {
   console.error(`browser errors:\n  ${[...new Set(errors)].join('\n  ')}`);
   process.exit(1);

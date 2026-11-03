@@ -7,7 +7,7 @@ import s from './live.module.css';
  * Server-timed bar. Animates with requestAnimationFrame against the server
  * clock, so it shows exactly the deadline the server will enforce.
  */
-export function TimerBar({ startsAt, endsAt, serverNow, ticks = true, label = 'Time left' }: { startsAt: number; endsAt: number; serverNow: () => number; ticks?: boolean; label?: string }) {
+export function TimerBar({ startsAt, endsAt, serverNow, ticks = true, label = 'Time left', calm = false }: { startsAt: number; endsAt: number; serverNow: () => number; ticks?: boolean; label?: string; calm?: boolean }) {
   const fill = useRef<HTMLDivElement>(null);
   const [secs, setSecs] = useState(() => Math.max(0, Math.ceil((endsAt - serverNow()) / 1000)));
   const lastTick = useRef<number | null>(null);
@@ -29,7 +29,7 @@ export function TimerBar({ startsAt, endsAt, serverNow, ticks = true, label = 'T
     return () => cancelAnimationFrame(raf);
   }, [startsAt, endsAt, serverNow, ticks]);
   return (
-    <div className={s.timer} data-urgent={secs <= 5} data-warm={secs <= 10} role="timer" aria-label={`${label}: ${secs} seconds`}>
+    <div className={s.timer} data-urgent={!calm && secs <= 5} data-warm={!calm && secs <= 10} data-calm={calm} role="timer" aria-label={`${label}: ${secs} seconds`}>
       <div className={s.track}>
         <div className={s.fill} ref={fill} />
       </div>

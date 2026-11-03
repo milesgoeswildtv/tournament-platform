@@ -179,7 +179,7 @@ export const TASK_GENERATORS: Record<TaskKind, (rng: Rng) => Task> = {
     const i = rng.int(0, ids.length - 1);
     return {
       kind: 'research',
-      prompt: `Which bay holds crate ${ids[i]}?`,
+      prompt: `Which bay number holds crate ${ids[i]}?`,
       detail: { columns: ['Crate', 'Bay', 'Weight'], rows },
       input: 'number',
       answer: bays[i],

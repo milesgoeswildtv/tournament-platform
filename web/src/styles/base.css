@@ -1,6 +1,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body, #root { height: 100%; }
+/* Nothing (including stamp animations) may make the page pan sideways on a phone. */
+body { overflow-x: hidden; }
+#root { overflow-x: clip; }
 
 body {
   margin: 0;

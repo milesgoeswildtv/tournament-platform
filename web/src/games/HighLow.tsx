@@ -14,11 +14,15 @@ export function HighLowPlay({ mine, me, canAct, pending, act }: PlayProps) {
   return (
     <div className={s.play}>
       <div className={s.grow}>
-        <div className={s.ticket} aria-live="polite" data-number={hand?.number ?? ''}>
-          <div className={s.ticketLabel}>{hand?.rerolled ? `Rerolled from ${hand.first}` : 'Your number'}</div>
-          <div className={s.ticketNum}>{hand ? hand.number : '··'}</div>
-          <div className={s.ticketFoot}>{hand ? (hand.rerolled ? 'Reroll used. You play this one.' : 'Keep it or reroll once.') : 'Dealt to players still standing'}</div>
-        </div>
+        {hand ? (
+          <div className={s.ticket} aria-live="polite" data-number={hand.number}>
+            <div className={s.ticketLabel}>{hand.rerolled ? `Rerolled from ${hand.first}` : 'Your number'}</div>
+            <div className={s.ticketNum}>{hand.number}</div>
+            <div className={s.ticketFoot}>{hand.rerolled ? 'Reroll used. You play this one.' : 'Keep it or reroll once.'}</div>
+          </div>
+        ) : (
+          <p className={s.big} style={{ textAlign: 'center', color: 'var(--ash)' }}>No hand this round</p>
+        )}
         <p className={s.hint}>Call whether your number lands above or below the house number (1–100). Matching it is out.</p>
       </div>
       <div className={s.calls} role="radiogroup" aria-label="Your call">

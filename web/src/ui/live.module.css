@@ -15,6 +15,8 @@
   font-variant-numeric: tabular-nums;
 }
 .timer[data-urgent='true'] .secs { color: var(--stop); }
+.timer[data-calm='true'] .fill { background: var(--grit); }
+.timer[data-calm='true'] .secs { font-size: var(--t-xl); color: var(--dust); }
 
 /* ------------------------------------------------------------ rubber stamp */
 
@@ -28,6 +30,7 @@
   line-height: 1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  margin: 4px 0 8px;
   transform: rotate(-4deg);
   animation: stamp 360ms var(--ease-slam) both;
   mix-blend-mode: screen;

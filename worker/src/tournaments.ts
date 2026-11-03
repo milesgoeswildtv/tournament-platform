@@ -354,7 +354,10 @@ export async function roomSocket(c: RouteCtx): Promise<Response> {
 
 export async function tournamentResults(c: RouteCtx): Promise<Response> {
   const user = await requireUser(c);
-  const t = await getRow(c.env, c.params.id);
+  const t = await c.env.DB.prepare(`SELECT t.*, u.display_name AS sponsor_name, u.tag AS sponsor_tag FROM tournaments t JOIN users u ON u.id = t.sponsor_id WHERE t.id = ?`)
+    .bind(c.params.id)
+    .first<TournamentRow>();
+  if (!t) throw new HttpError(404, 'not_found', 'Tournament not found.');
   const m = await membership(c.env, t.id, user.id);
   if (!m && t.visibility !== 'PUBLIC' && !user.is_admin) throw new HttpError(403, 'forbidden', 'Only participants can view these results.');
   const db = c.env.DB;
@@ -366,7 +369,7 @@ export async function tournamentResults(c: RouteCtx): Promise<Response> {
     db.prepare('SELECT p.user_id, p.role, p.eligible_from, p.left_at, u.display_name AS name, u.tag FROM participants p JOIN users u ON u.id = p.user_id WHERE p.tournament_id = ?').bind(t.id).all(),
   ]);
   return json({
-    tournament: summary(t),
+    tournament: summary({ ...t, my_role: m?.role ?? null }),
     config: JSON.parse(t.config_json),
     configHash: t.config_hash,
     standings: standings.results,

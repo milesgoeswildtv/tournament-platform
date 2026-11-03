@@ -39,6 +39,7 @@
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
 }
 .primary:hover:not(:disabled) { --bg: #ffb24f; --bd: #ffb24f; }
+.primary:disabled { --bg: var(--slab); --fg: var(--ash); --bd: var(--steel); opacity: 1; }
 
 .secondary { --bg: var(--slab); --bd: var(--steel); box-shadow: var(--edge); }
 .secondary:hover:not(:disabled) { --bd: var(--grit); --bg: var(--slab-hi); }
@@ -159,6 +160,8 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   font-size: var(--t-md);
   line-height: 1.1;
 }
+.segScroll { grid-auto-columns: max-content; width: max-content; min-width: 100%; }
+.segScroll .segBtn { padding: 0 var(--s-3); }
 .segBtn[aria-checked='true'] { background: var(--slab-hi); color: var(--chalk); box-shadow: var(--edge), inset 0 -2px 0 var(--sodium); }
 .segBtn:disabled { opacity: 0.4; }
 

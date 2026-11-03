@@ -100,9 +100,9 @@ export function TextInput({ label, hint, error, className, code, prefix, ...rest
   );
 }
 
-export function Segmented<T extends string | number>({ options, value, onChange, label, disabled }: { options: { value: T; label: ReactNode; disabled?: boolean }[]; value: T; onChange: (v: T) => void; label: string; disabled?: boolean }) {
+export function Segmented<T extends string | number>({ options, value, onChange, label, disabled, scroll }: { options: { value: T; label: ReactNode; disabled?: boolean }[]; value: T; onChange: (v: T) => void; label: string; disabled?: boolean; scroll?: boolean }) {
   return (
-    <div className={s.seg} role="radiogroup" aria-label={label}>
+    <div className={cx(s.seg, scroll && s.segScroll)} role="radiogroup" aria-label={label}>
       {options.map((o) => (
         <button
           key={String(o.value)}
