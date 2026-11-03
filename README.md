@@ -90,8 +90,8 @@ To make an account an admin, register it with a handle listed in `ADMIN_HANDLES`
 ## Tests
 
 ```bash
-npm run test:unit          # 67 tests: every game's rules, ties, payouts, config, lineups, room state machine
-npm run test:integration   # 15 tests: real Worker + DO over HTTP/WebSocket, multiple simultaneous players
+npm run test:unit          # 71 tests: every game's rules, ties, payouts, config, lineups, room state machine
+npm run test:integration   # 18 tests: real Worker + DO over HTTP/WebSocket, multiple simultaneous players
 npm run build:web && npm run test:ui   # browser E2E at phone size: full tournament through the UI
 npm run shots              # screenshots of the main screens into screens/
 ```

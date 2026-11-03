@@ -456,3 +456,55 @@ describe('rate limiting', () => {
     await sponsor.disconnect();
   });
 });
+
+describe('Telegram (server configured with a bot token)', () => {
+  const TOKEN = '777000:integration-test-token';
+  let tg: DevServer;
+  const sign = async (fields: Record<string, string>) => {
+    const { createHmac } = await import('node:crypto');
+    const check = Object.keys(fields).sort().map((k) => `${k}=${fields[k]}`).join('\n');
+    const secret = createHmac('sha256', 'WebAppData').update(TOKEN).digest();
+    return new URLSearchParams({ ...fields, hash: createHmac('sha256', secret).update(check).digest('hex') }).toString();
+  };
+  before(async () => {
+    tg = await startDevServer({ quiet: true, staticDir: null, timeScale: SCALE, extraEnv: { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_WEBHOOK_SECRET: 'hook-secret-123', TELEGRAM_BOT_USERNAME: 'tbd_test_bot' } });
+  });
+  after(async () => {
+    await tg.close();
+  });
+
+  test('Mini App sign-in: signed initData creates one account per Telegram user; forged data is refused', async () => {
+    const anon = new Client(tg.url, 'tg');
+    const now = Math.floor(Date.now() / 1000);
+    const initData = await sign({ user: JSON.stringify({ id: 5150, first_name: 'Rae', username: 'rae' }), auth_date: String(now), start_param: 'ABCD2345' });
+    const r1 = await anon.api('POST', '/api/auth/telegram', { initData });
+    assert.equal(r1.status, 200, JSON.stringify(r1.data));
+    assert.equal(r1.data.user.name, 'Rae');
+    assert.equal(r1.data.user.telegram, true);
+    assert.equal(r1.data.startParam, 'ABCD2345');
+    const r2 = await anon.api('POST', '/api/auth/telegram', { initData });
+    assert.equal(r2.data.user.id, r1.data.user.id, 'same Telegram user → same account');
+
+    const forged = initData.replace('5150', '5151');
+    assert.equal((await anon.api('POST', '/api/auth/telegram', { initData: forged })).status, 401);
+    assert.equal((await anon.api('POST', '/api/auth/telegram', { initData: 'user=%7B%22id%22%3A1%7D&auth_date=1&hash=00' })).status, 401);
+  });
+
+  test('a signed-in browser account gets Telegram linked when it opens the Mini App', async () => {
+    const c = await Client.register(tg.url, handle('tglink'));
+    const initData = await sign({ user: JSON.stringify({ id: 8080, first_name: 'Link' }), auth_date: String(Math.floor(Date.now() / 1000)) });
+    const r = await c.api('POST', '/api/auth/telegram', { initData });
+    assert.equal(r.data.user.id, c.user.id);
+    const me = await c.api('GET', '/api/me');
+    assert.equal(me.data.telegram.linked, true);
+    assert.equal(me.data.telegram.bot, 'tbd_test_bot');
+  });
+
+  test('webhook requires the registered secret header', async () => {
+    const body = JSON.stringify({ message: { chat: { id: 1, type: 'private' }, text: '/help' } });
+    const bad = await fetch(`${tg.url}/api/telegram/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-telegram-bot-api-secret-token': 'nope' }, body });
+    assert.equal(bad.status, 401);
+    const ok = await fetch(`${tg.url}/api/telegram/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-telegram-bot-api-secret-token': 'hook-secret-123' }, body });
+    assert.equal(ok.status, 200);
+  });
+});
