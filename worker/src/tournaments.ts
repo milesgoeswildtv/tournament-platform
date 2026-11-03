@@ -402,4 +402,14 @@ export async function tournamentAudit(c: RouteCtx): Promise<Response> {
   });
 }
 
+/** Admin: every tournament, newest first. */
+export async function adminTournaments(c: RouteCtx): Promise<Response> {
+  const user = await requireUser(c);
+  if (!user.is_admin) throw new HttpError(403, 'forbidden', 'Admins only.');
+  const rows = await c.env.DB.prepare(
+    `SELECT t.*, u.display_name AS sponsor_name, u.tag AS sponsor_tag FROM tournaments t JOIN users u ON u.id = t.sponsor_id ORDER BY t.created_at DESC LIMIT 200`,
+  ).all<TournamentRow>();
+  return json({ tournaments: rows.results.map(summary) });
+}
+
 export { optionalUser };

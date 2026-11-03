@@ -1,4 +1,5 @@
 import { asRecord, baseInit, nextRound, type BaseState, type GameDefinition } from './common';
+import { GAME_META_DATA } from './meta';
 
 interface S extends BaseState {
   percent: number;
@@ -24,23 +25,7 @@ export function zeroHourScaledDistance(value: number, sum: number, count: number
 }
 
 export const zeroHour: GameDefinition<S> = {
-  meta: {
-    id: 'zero-hour',
-    name: 'Zero Hour',
-    tagline: 'Out-think the room.',
-    description: 'Everyone picks 0–100 in secret. The target is a set percentage of the average. Closest wins.',
-    instructions: [
-      'Enter a whole number from 0 to 100. It stays hidden until the round closes.',
-      'The target is the configured percentage of everyone’s average.',
-      'Closest to the target wins the stage. One submission, no changes.',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: 1,
-    roundNoun: 'Call',
-    winRule: 'Closest number to the target wins.',
-    tieRule: 'Equal distance: the earlier submission (server time) wins; identical times fall to a server-drawn order.',
-  },
+  meta: GAME_META_DATA['zero-hour'],
   init(players, ctx) {
     return { ...baseInit(players, 1, ctx.rng), percent: ctx.settings.zeroHourPercent, subs: {}, result: null };
   },

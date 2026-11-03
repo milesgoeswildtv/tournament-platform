@@ -1,0 +1,65 @@
+/* ------------------------------------------------------------ timer bar */
+
+.timer { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-3); }
+.track { position: relative; height: 10px; background: var(--slab); border: 1px solid var(--steel); overflow: hidden; }
+.fill { position: absolute; inset: 0; transform-origin: left center; background: var(--fluoro); will-change: transform; }
+.timer[data-urgent='true'] .fill { background: var(--stop); }
+.timer[data-urgent='false'][data-warm='true'] .fill { background: var(--sodium); }
+.secs {
+  min-width: 3ch;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: var(--t-3xl);
+  line-height: 0.9;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.timer[data-urgent='true'] .secs { color: var(--stop); }
+
+/* ------------------------------------------------------------ rubber stamp */
+
+.stamp {
+  display: inline-block;
+  padding: 6px 14px 4px;
+  border: 4px solid currentColor;
+  font-family: var(--f-stencil);
+  font-weight: 900;
+  font-size: clamp(2rem, 11vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  animation: stamp 360ms var(--ease-slam) both;
+  mix-blend-mode: screen;
+  /* worn ink: knock a little out of the solid */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 2.1'/%3E%3C/filter%3E%3Crect width='120' height='60' filter='url(%23n)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 2.1'/%3E%3C/filter%3E%3Crect width='120' height='60' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.stamp_go { color: var(--go); }
+.stamp_stop { color: var(--stop); }
+.stamp_info { color: var(--fluoro); }
+.stamp_live { color: var(--sodium); }
+@keyframes stamp {
+  0% { transform: rotate(-4deg) scale(1.6); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: rotate(-4deg) scale(1); opacity: 1; }
+}
+
+/* ------------------------------------------------------------ hazard tape */
+
+.hazard {
+  height: 14px;
+  background: repeating-linear-gradient(-45deg, var(--sodium) 0 14px, var(--void) 14px 28px);
+  opacity: 0.9;
+}
+.hazardMove { background-size: 40px 40px; animation: crawl 1.2s linear infinite; }
+@keyframes crawl { to { background-position: 40px 0; } }
+
+/* ------------------------------------------------------------ field dots (who is still standing) */
+
+.field { display: flex; flex-wrap: wrap; gap: 5px; }
+.dot { width: 12px; height: 12px; border: 2px solid var(--grit); }
+.dot_alive { background: var(--go); border-color: var(--go); }
+.dot_done { background: var(--fluoro); border-color: var(--fluoro); }
+.dot_out { border-color: var(--stop-dim); background: transparent; }
+.dot_me { outline: 2px solid var(--chalk); outline-offset: 2px; }

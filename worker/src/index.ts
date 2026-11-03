@@ -17,6 +17,7 @@ import {
   tournamentAudit,
   tournamentResults,
   updateConfig,
+  adminTournaments,
 } from './tournaments';
 
 export { TournamentRoom } from './room';
@@ -48,6 +49,7 @@ const router = new Router()
   .get('/api/tournaments/:id/audit', tournamentAudit)
   .get('/api/invites/:code', inviteInfo)
   .post('/api/join', joinTournament)
+  .get('/api/admin/tournaments', adminTournaments)
   // telegram
   .post('/api/telegram/webhook', telegramWebhook);
 

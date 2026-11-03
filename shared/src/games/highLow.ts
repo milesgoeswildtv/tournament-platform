@@ -1,4 +1,5 @@
 import { applySurvival, asRecord, baseInit, nextRound, survivalRanking, type BaseState, type GameDefinition } from './common';
+import { GAME_META_DATA } from './meta';
 
 interface Hand {
   first: number;
@@ -20,24 +21,7 @@ export function highLowVerdict(final: number, call: 'high' | 'low' | null, compa
 }
 
 export const highLow: GameDefinition<S> = {
-  meta: {
-    id: 'high-low',
-    name: 'Trust Yourself',
-    tagline: 'Keep it or burn it. Then call it.',
-    description: 'You get a secret number from 1–100. Keep it or reroll once, then call HIGH or LOW against the house number.',
-    instructions: [
-      'You are dealt a private number from 1 to 100.',
-      'Keep it, or reroll once. A reroll is final — you play the new number.',
-      'Call HIGH if you think yours beats the house number, LOW if it falls under.',
-      'Ties with the house are eliminated. No call before time is up means you are out.',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: 5,
-    roundNoun: 'Hand',
-    winRule: 'Last player standing wins the stage.',
-    tieRule: 'If more than one player survives 5 hands, they share the stage win.',
-  },
+  meta: GAME_META_DATA['high-low'],
   init(players, ctx) {
     return { ...baseInit(players, 5, ctx.rng), hands: {} };
   },

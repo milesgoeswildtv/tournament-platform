@@ -1,6 +1,7 @@
 import { applySurvival, asRecord, baseInit, nextRound, survivalRanking, type BaseState, type GameDefinition } from './common';
+import { GAME_META_DATA, SUITS } from './meta';
 
-export const SUITS = ['spade', 'diamond', 'club', 'heart'] as const;
+export { SUITS };
 export type Suit = (typeof SUITS)[number];
 
 /** Each suit beats exactly one other: Spade>Diamond>Club>Heart>Spade. */
@@ -24,24 +25,7 @@ interface S extends BaseState {
 }
 
 export const suitedUp: GameDefinition<S> = {
-  meta: {
-    id: 'suited-up',
-    name: 'Suited Up',
-    tagline: 'Read the dealer’s pair.',
-    description: 'Pick a suit. The dealer shows two different suits. Score each matchup; stay at zero or better.',
-    instructions: [
-      'Spade beats Diamond. Diamond beats Club. Club beats Heart. Heart beats Spade.',
-      'Any other pairing, or the same suit, is neutral.',
-      'Pick one suit. The dealer then reveals two different suits.',
-      'Each matchup: win +1, neutral 0, loss −1. Total 0 or better survives; −1 is out.',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: 5,
-    roundNoun: 'Deal',
-    winRule: 'Last player standing wins the stage.',
-    tieRule: 'Still tied after 5 deals: highest running score wins; equal scores share the stage.',
-  },
+  meta: GAME_META_DATA['suited-up'],
   init(players, ctx) {
     return { ...baseInit(players, 5, ctx.rng), picks: {}, totals: Object.fromEntries(players.map((p) => [p, 0])) };
   },

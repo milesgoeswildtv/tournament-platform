@@ -1,0 +1,109 @@
+/*
+ * Design tokens. Every color, size and duration in the app comes from here.
+ *
+ * Light is state: sodium (warm work light) = live / your move,
+ * fluoro (cold tube light) = information / waiting, go = still standing,
+ * stop = out. Everything else is concrete and steel.
+ */
+@font-face { font-family: 'Big Shoulders Display'; src: url('/fonts/big-shoulders-display.woff') format('woff'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Big Shoulders Stencil'; src: url('/fonts/big-shoulders-stencil.woff') format('woff'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('/fonts/barlow-400.woff') format('woff'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('/fonts/barlow-500.woff') format('woff'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('/fonts/barlow-600.woff') format('woff'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/fonts/barlow-condensed-600.woff') format('woff'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/fonts/barlow-condensed-700.woff') format('woff'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Plex Mono'; src: url('/fonts/plex-mono-400.woff') format('woff'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plex Mono'; src: url('/fonts/plex-mono-600.woff') format('woff'); font-weight: 600; font-display: swap; }
+
+:root {
+  color-scheme: dark;
+
+  /* ground */
+  --void: #060606;
+  --char: #151513;
+  --slab: #201f1c;
+  --slab-hi: #2a2925;
+  --steel: #34322d;
+  --grit: #4b4841;
+
+  /* ink */
+  --chalk: #ece7db;
+  --dust: #a39e92;
+  --ash: #75716a;
+
+  /* light */
+  --sodium: #f5a23a;
+  --sodium-dim: #7a5121;
+  --sodium-ink: #1c1206;
+  --fluoro: #bde2e4;
+  --fluoro-dim: #3c5355;
+  --go: #86d17a;
+  --go-dim: #2b4a27;
+  --stop: #ee4b3b;
+  --stop-dim: #4f1a15;
+
+  /* the five cans (Guess the Color) */
+  --can-red: #e04a3a;
+  --can-yellow: #efc93c;
+  --can-green: #4fb061;
+  --can-blue: #3d7dd8;
+  --can-white: #edeae2;
+
+  /* type */
+  --f-display: 'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
+  --f-stencil: 'Big Shoulders Stencil', 'Big Shoulders Display', Impact, sans-serif;
+  --f-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-cond: 'Barlow Condensed', 'Barlow', 'Arial Narrow', sans-serif;
+  --f-code: 'Plex Mono', ui-monospace, Menlo, monospace;
+
+  /* modular scale, ratio 1.25 from 16px */
+  --t-xs: 0.8rem;
+  --t-sm: 0.875rem;
+  --t-md: 1rem;
+  --t-lg: 1.25rem;
+  --t-xl: 1.563rem;
+  --t-2xl: 1.953rem;
+  --t-3xl: 2.441rem;
+  --t-4xl: 3.052rem;
+  --t-5xl: 3.815rem;
+
+  /* spacing: 4px grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+
+  --gutter: 16px;
+  --content: 720px;
+  --tap: 48px;
+  --tap-lg: 60px;
+
+  /* edges: plates are cut, controls are barely rounded, status is round */
+  --r-ctl: 3px;
+  --r-pill: 999px;
+  --cut: 10px;
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  /* motion: mechanical, short */
+  --m-fast: 120ms;
+  --m-med: 200ms;
+  --m-slow: 360ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-slam: cubic-bezier(0.3, 1.6, 0.5, 1);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tabbar-h: 64px;
+}
+
+@media (min-width: 960px) {
+  :root {
+    --gutter: 32px;
+  }
+}

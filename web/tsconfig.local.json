@@ -1,0 +1,26 @@
+{
+  "//": "Typecheck without @types/react (offline environments). CI uses tsconfig.json with the real React types.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@shared/*": [
+        "../shared/src/*"
+      ],
+      "react": [
+        "./types-local/react.d.ts"
+      ],
+      "react/jsx-runtime": [
+        "./types-local/jsx-runtime.d.ts"
+      ],
+      "react-dom/client": [
+        "./types-local/react-dom-client.d.ts"
+      ]
+    },
+    "noImplicitAny": false
+  },
+  "include": [
+    "src",
+    "types/*.d.ts",
+    "types-local/*.d.ts"
+  ]
+}

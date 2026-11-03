@@ -1,4 +1,5 @@
 import { asRecord, baseInit, nextRound, survivalRanking, type BaseState, type GameDefinition } from './common';
+import { GAME_META_DATA } from './meta';
 
 /** Multiplier growth per second (e^0.07t): ~2.0x at 10s, ~4.1x at 20s, ~8.2x at 30s. */
 export const PRESSURE_GROWTH = 0.07;
@@ -16,24 +17,7 @@ interface S extends BaseState {
 }
 
 export const pressureCooker: GameDefinition<S> = {
-  meta: {
-    id: 'pressure-cooker',
-    name: 'Pressure Cooker',
-    tagline: 'Hold your nerve. Not too long.',
-    description: 'A multiplier climbs until the pressure breaks at a hidden moment. Cash out before it does.',
-    instructions: [
-      'The multiplier starts at 1.00× and climbs.',
-      'Tap CASH OUT to lock your multiplier. The server records the exact moment it receives your tap.',
-      'The break point is hidden and drawn by the server. If it breaks before you cash out, you are out.',
-      'Highest locked multiplier wins the stage. If everyone busts, the round replays (up to 3 times).',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: 3,
-    roundNoun: 'Run',
-    winRule: 'Highest locked multiplier wins.',
-    tieRule: 'Equal multipliers: the later server-recorded cash-out (higher exact value) wins; identical times fall to a server-drawn order.',
-  },
+  meta: GAME_META_DATA['pressure-cooker'],
   init(players, ctx) {
     return { ...baseInit(players, 3, ctx.rng), breakAt: 0, broken: false, cashouts: {}, winner: null };
   },

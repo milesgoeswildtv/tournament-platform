@@ -1,4 +1,5 @@
 import { asRecord, baseInit, nextRound, normalizeAnswer, type BaseState, type GameDefinition } from './common';
+import { GAME_META_DATA } from './meta';
 import { DECODE_PUZZLES, type DecodePuzzle } from './decodeLibrary';
 
 interface Guess {
@@ -44,24 +45,7 @@ export function decodeMatches(p: DecodePuzzle, guess: string): boolean {
 const puzzleOf = (s: S) => DECODE_PUZZLES[s.puzzleIndex];
 
 export const decode: GameDefinition<S> = {
-  meta: {
-    id: 'decode',
-    name: 'Decode',
-    tagline: 'Same board. Who cracks it first?',
-    description: 'Everyone gets the same hidden phrase. One guess per round; each round reveals more.',
-    instructions: [
-      'Everyone sees the same masked phrase and its category.',
-      'You get one private guess per round. Spelling and spacing are forgiven; letters are not.',
-      'Round 2 adds a clue. Round 3 adds a second clue and reveals the vowels.',
-      'The first correct guess (by server time) wins the stage. Unsolved after 3 rounds: no winner.',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: 3,
-    roundNoun: 'Round',
-    winRule: 'Earliest correct guess wins.',
-    tieRule: 'Guesses are ordered by server receive time; identical times fall to a server-drawn order.',
-  },
+  meta: GAME_META_DATA['decode'],
   init(players, ctx) {
     return {
       ...baseInit(players, 3, ctx.rng),

@@ -1,6 +1,7 @@
 import { applySurvival, asRecord, baseInit, nextRound, survivalRanking, type BaseState, type GameDefinition } from './common';
+import { COLORS, GAME_META_DATA } from './meta';
 
-export const COLORS = ['red', 'yellow', 'green', 'blue', 'white'] as const;
+export { COLORS };
 export type Color = (typeof COLORS)[number];
 
 interface S extends BaseState {
@@ -8,24 +9,7 @@ interface S extends BaseState {
 }
 
 export const guessColor: GameDefinition<S> = {
-  meta: {
-    id: 'guess-color',
-    name: 'Guess the Color',
-    tagline: 'Five cans. One is live.',
-    description: 'Pick one of five colors. The house draws one at random. Match it to stay in.',
-    instructions: [
-      'Pick one of the five colors before the timer runs out. Your pick locks.',
-      'The server draws the winning color after picks close.',
-      'Match it and you survive. Miss it, or pick nothing, and you are out.',
-      'If every remaining player misses, the round is void and replays.',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: 6,
-    roundNoun: 'Draw',
-    winRule: 'Last player standing wins the stage.',
-    tieRule: 'If more than one player is still standing after 6 draws, they share the stage win.',
-  },
+  meta: GAME_META_DATA['guess-color'],
   init(players, ctx) {
     return { ...baseInit(players, 6, ctx.rng), picks: {} };
   },

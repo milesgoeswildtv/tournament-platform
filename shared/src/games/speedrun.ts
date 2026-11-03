@@ -1,5 +1,6 @@
 import type { Rng } from '../rng';
 import { asRecord, baseInit, nextRound, survivalRanking, type BaseState, type GameDefinition } from './common';
+import { GAME_META_DATA } from './meta';
 import { evaluateTask, generateTask, type Task } from './speedrunTasks';
 
 /**
@@ -53,24 +54,7 @@ interface S extends BaseState {
 const MAX_ROUNDS = 12;
 
 export const speedrun: GameDefinition<S> = {
-  meta: {
-    id: 'speedrun',
-    name: 'Randomizer Speedrun',
-    tagline: 'Fast and right, or gone.',
-    description: 'A random task every round — math, words, reading, observation, trivia, directions, lookups. Speed matters.',
-    instructions: [
-      'Each round serves a random task from a controlled library. One answer per round.',
-      'Wrong answers and no answer are eliminated.',
-      'Rounds 1–5 cut at least 1 player, rounds 6–10 cut 1–2, rounds 11+ cut 1–3. If too few are wrong, the slowest correct answers are cut.',
-      'At least one player always survives a round. If nobody is right, the round is void.',
-    ],
-    minPlayers: 1,
-    maxPlayers: 1000,
-    maxRounds: MAX_ROUNDS,
-    roundNoun: 'Task',
-    winRule: 'Last player standing wins the stage.',
-    tieRule: 'Still more than one after 12 tasks: lowest total answer time wins; exact ties fall to a server-drawn order.',
-  },
+  meta: GAME_META_DATA['speedrun'],
   init(players, ctx) {
     const zero = Object.fromEntries(players.map((p) => [p, 0]));
     return {
