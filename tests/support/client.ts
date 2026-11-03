@@ -17,6 +17,10 @@ export class Client {
   replies: unknown[] = [];
   views = 0;
   /** Each simulated device gets its own address (the dev server honours cf-connecting-ip; Cloudflare overwrites it in production). */
+  /** Cloudflare rejects client-supplied cf-connecting-ip, so only the local dev server gets it. */
+  get local() {
+    return /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(this.base);
+  }
   readonly ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`;
   private listeners = new Set<() => void>();
 
@@ -37,7 +41,7 @@ export class Client {
   async api<T = any>(method: string, path: string, body?: unknown): Promise<ApiResult<T>> {
     const res = await fetch(`${this.base}${path}`, {
       method,
-      headers: { 'content-type': 'application/json', 'cf-connecting-ip': this.ip, ...(this.token ? { authorization: `Bearer ${this.token}` } : {}) },
+      headers: { 'content-type': 'application/json', ...(this.local ? { 'cf-connecting-ip': this.ip } : {}), ...(this.token ? { authorization: `Bearer ${this.token}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const text = await res.text();
