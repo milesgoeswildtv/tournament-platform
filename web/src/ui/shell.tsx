@@ -24,7 +24,7 @@ const RAIL: typeof TABS = [
   { to: '/settings', label: 'Settings', icon: 'settings', match: /^\/settings/ },
 ];
 
-/** The product has no name yet, so the sign is taped over. */
+/** The SHYST wordmark: stencil on a strip of tape. */
 export function Wordmark() {
   return <TapeMark to="/" />;
 }

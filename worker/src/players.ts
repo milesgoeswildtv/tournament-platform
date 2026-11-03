@@ -44,7 +44,7 @@ export async function me(c: RouteCtx): Promise<Response> {
     user: publicUser(u),
     stats: await stats(c, u.id),
     unread: unread?.n ?? 0,
-    telegram: { configured: !!c.env.TELEGRAM_BOT_TOKEN, bot: c.env.TELEGRAM_BOT_USERNAME ?? null, linked: !!u.telegram_id },
+    telegram: { configured: !!c.env.TELEGRAM_BOT_TOKEN, bot: c.env.TELEGRAM_BOT_USERNAME ?? null, linked: !!u.telegram_id, username: u.telegram_username ?? null },
   });
 }
 

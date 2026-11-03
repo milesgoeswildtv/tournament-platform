@@ -34,6 +34,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Health
         run: curl -fsS "$E2E_API_URL/api/health"
+      - name: Telegram account linking against production (one player, no duplicates)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: node --import tsx scripts/verify-telegram-link.ts
       - name: Full tournament in the browser against production
         run: npm run test:ui
       - uses: actions/upload-artifact@v4

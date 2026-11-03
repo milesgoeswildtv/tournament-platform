@@ -11,7 +11,7 @@
  *   concrete  the ground everything sits on (body background)
  *   steel     controls and panels (char / slab / steel)
  *   paper     things you hold: the event bill, tickets, cards, letter tiles
- *   tape      the brand placeholder only — the name is literally taped over
+ *   tape      the SHYST wordmark only
  */
 @font-face { font-family: 'Big Shoulders Display'; src: url('/fonts/big-shoulders-display.woff') format('woff'); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: 'Big Shoulders Stencil'; src: url('/fonts/big-shoulders-stencil.woff') format('woff'); font-weight: 100 900; font-display: swap; }
@@ -58,7 +58,7 @@
   --paper-mute: #5a5446;
   --paper-red: #b3352a; /* rubber-stamp ink on paper */
 
-  /* gaffer tape: the NAME TBD placeholder mark */
+  /* gaffer tape: the SHYST wordmark */
   --tape: #d3ccb9;
   --tape-ink: #1b1813;
 

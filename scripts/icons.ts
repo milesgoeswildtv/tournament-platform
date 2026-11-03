@@ -1,6 +1,6 @@
 /**
  * Renders the app icons from the same fonts and materials as the app: the
- * NAME TBD tape strip on concrete under the work light.
+ * SHYST tape strip on concrete under the work light.
  *
  *   node --import tsx scripts/icons.ts
  *
@@ -35,7 +35,7 @@ body {
 }
 .tape {
   width: ${Math.round(440 * safe)}px;
-  padding: ${Math.round(34 * safe)}px 0 ${Math.round(26 * safe)}px;
+  padding: ${Math.round(44 * safe)}px 0 ${Math.round(34 * safe)}px;
   display: grid; justify-items: center; line-height: 0.86;
   font-family: S; font-weight: 800; letter-spacing: 0.05em;
   color: #1b1813;
@@ -43,9 +43,9 @@ body {
   transform: rotate(-6deg);
   clip-path: polygon(0 10%, 2% 0, 30% 2%, 62% 0, 98% 2%, 100% 14%, 98.6% 34%, 100% 52%, 98.2% 70%, 100% 88%, 97% 100%, 58% 97%, 24% 100%, 3% 98%, 1% 82%, 0 64%, 1.6% 44%, 0 26%);
 }
-.tape b { font-size: ${Math.round(150 * safe)}px; font-weight: 800; }
+.tape b { font-size: ${Math.round(148 * safe)}px; font-weight: 800; }
 .tape span { font-size: ${Math.round(150 * safe)}px; }
-</style></head><body><div class="tape"><b>NAME</b><span>TBD</span></div></body></html>`;
+</style></head><body><div class="tape"><b>SHYST</b></div></body></html>`;
 }
 
 const dir = mkdtempSync(join(tmpdir(), 'icons-'));

@@ -2,6 +2,7 @@ import type { Env } from './env';
 import { HttpError, json, readJson, type RouteCtx } from './http';
 import { timingSafeEqual } from './security';
 import { escapeHtml, sendTelegram } from './telegram';
+import { LINK_PREFIX, attachTelegram, consumeLinkToken } from './identity';
 
 /**
  * Telegram webhook. Telegram calls this with the secret registered by
@@ -12,10 +13,43 @@ export async function telegramWebhook(c: RouteCtx): Promise<Response> {
   if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_WEBHOOK_SECRET) throw new HttpError(503, 'telegram_not_configured');
   const secret = c.req.headers.get('x-telegram-bot-api-secret-token') ?? '';
   if (!timingSafeEqual(secret, env.TELEGRAM_WEBHOOK_SECRET)) throw new HttpError(401, 'bad_secret');
-  const update = await readJson<{ message?: { chat: { id: number; type: string }; text?: string; from?: { first_name?: string } } }>(c.req, 65_536);
+  const update = await readJson<{ message?: { chat: { id: number; type: string }; text?: string; from?: { id?: number; first_name?: string; username?: string; is_bot?: boolean } } }>(c.req, 65_536);
   const msg = update.message;
-  if (msg?.text && msg.chat.type === 'private') c.exec.waitUntil(handleCommand(env, msg.chat.id, msg.text, msg.from?.first_name));
+  if (msg?.text && msg.chat.type === 'private') {
+    const [cmd, arg] = msg.text.trim().split(/\s+/, 2);
+    // Linking runs inside the request so its outcome is recorded before Telegram retries.
+    if (cmd === '/start' && arg?.startsWith(LINK_PREFIX) && msg.from?.id && !msg.from.is_bot) {
+      await linkFromBot(env, msg.chat.id, arg.slice(LINK_PREFIX.length), { id: String(msg.from.id), username: msg.from.username ?? null });
+    } else {
+      c.exec.waitUntil(handleCommand(env, msg.chat.id, msg.text, msg.from?.first_name));
+    }
+  }
   return json({ ok: true });
+}
+
+/**
+ * /start link_<token>, sent by the link button in Settings. Telegram's webhook
+ * is authenticated by the secret header, so `from.id` is the verified sender.
+ */
+async function linkFromBot(env: Env, chatId: number, token: string, tg: { id: string; username: string | null }) {
+  const chat = String(chatId);
+  const target = await consumeLinkToken(env, token, tg.id);
+  if (!target) {
+    await sendTelegram(env, chat, 'That link has expired or was already used. Open SHYST, go to Settings and tap <b>Link Telegram</b> again.', '/settings', 'Open SHYST');
+    return;
+  }
+  const r = await attachTelegram(env, target, tg, 'bot');
+  if (!r.ok) {
+    await sendTelegram(env, chat, `Couldn’t link: ${escapeHtml(r.message)}`, '/settings', 'Open SHYST');
+    return;
+  }
+  await sendTelegram(
+    env,
+    chat,
+    `Linked. Telegram now signs you in as <b>${escapeHtml(r.user.display_name)}</b> (#${r.user.tag}) on SHYST.${r.reconciled ? `\nThe empty Telegram-only player #${r.reconciled.tag} was folded into this one.` : ''}`,
+    '/',
+    'Open SHYST',
+  );
 }
 
 async function handleCommand(env: Env, chatId: number, text: string, firstName?: string) {
@@ -34,7 +68,7 @@ async function handleCommand(env: Env, chatId: number, text: string, firstName?:
     await sendTelegram(
       env,
       chat,
-      `Hey ${name}. This is <b>NAME TBD</b> — sponsored elimination tournaments.\n\nTap below to open the app. Have an invite code? Send <code>/join CODE</code>.`,
+      `Hey ${name}. This is <b>SHYST</b> — sponsored elimination tournaments.\n\nTap below to open the app. Have an invite code? Send <code>/join CODE</code>.`,
       '/',
       'Open',
     );

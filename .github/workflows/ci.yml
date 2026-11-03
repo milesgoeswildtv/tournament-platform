@@ -116,7 +116,7 @@ jobs:
           sleep 10
           curl -fsS "${{ steps.urls.outputs.api }}/api/health" | tee health.json
           jq -e '.ok == true and .env == "production"' health.json
-          curl -fsS "${{ steps.urls.outputs.app }}/" | grep -q '<title>NAME TBD</title>'
+          curl -fsS "${{ steps.urls.outputs.app }}/" | grep -q '<title>SHYST</title>'
           curl -fsS -o /dev/null -w '%{http_code}\n' -X OPTIONS -H "Origin: ${{ steps.urls.outputs.app }}" -H 'Access-Control-Request-Method: POST' "${{ steps.urls.outputs.api }}/api/auth/login"
           echo "### Deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "- App: ${{ steps.urls.outputs.app }}" >> "$GITHUB_STEP_SUMMARY"

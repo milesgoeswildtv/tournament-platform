@@ -4,6 +4,7 @@ import { navigate, useLocation } from '../lib/router';
 import { Button, Segmented, TextInput } from '../ui/controls';
 import { Text } from '../ui/layout';
 import { TapeMark } from '../ui/venue';
+import { inTelegram, linkInMiniApp } from '../lib/telegram';
 import s from './screens.module.css';
 
 export function AuthScreen() {
@@ -32,6 +33,7 @@ export function AuthScreen() {
           ? await post<{ token: string; user: User }>('/api/auth/register', { handle, password, displayName: name || handle })
           : await post<{ token: string; user: User }>('/api/auth/login', { handle, password });
       setSession({ token: r.token, user: r.user });
+      if (inTelegram()) await linkInMiniApp();
       navigate(next, { replace: true });
     } catch (e2) {
       const a = e2 as ApiError;

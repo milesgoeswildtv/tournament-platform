@@ -11,7 +11,7 @@
 | **Concrete** | the ground everything sits on | `body::before`: the work-light falloff, a fine grain, long scuffs and a dark vignette |
 | **Steel** | controls and panels | `--char` / `--slab` / `--steel`, with a 1px lit top edge (`--edge`). No drop shadows. Grating (two fine diagonal hatches) on the tab bar and lobby dock, underfoot |
 | **Paper** | things a player would hold: the event bill, the invite ticket, the High/Low ticket, dealer cards, Decode letter tiles | `--paper*` plus `--paper-grain`, weathered edges and torn or notched cuts |
-| **Tape** | the NAME TBD placeholder only | `--tape`. The product has no name yet, so the sign is literally taped over |
+| **Tape** | the SHYST wordmark only | `--tape`. The name is stencilled on a strip of gaffer tape |
 
 Hazard stripes appear only on the countdown. Stencil type appears only on live moments (see below).
 

@@ -5,7 +5,7 @@ import { setPrefs, usePrefs } from '../lib/prefs';
 import { audio } from '../lib/audio';
 import { navigate } from '../lib/router';
 import { toast } from '../lib/toast';
-import { inTelegram } from '../lib/telegram';
+import { openTelegram, reserveTab } from '../lib/telegram';
 import { Button, Field, Segmented, TextInput, Toggle, fieldStyles } from '../ui/controls';
 import { Chip, Page, PageHead, Section, Spec, Stack, Text } from '../ui/layout';
 import sc from './screens.module.css';
@@ -13,7 +13,8 @@ import sc from './screens.module.css';
 export function SettingsScreen() {
   const session = useSession();
   const prefs = usePrefs();
-  const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean } }>('/api/me'));
+  const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null } }>('/api/me'));
+  const [linking, setLinking] = useState(false);
   const [name, setName] = useState(session?.user.name ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -104,14 +105,41 @@ export function SettingsScreen() {
             <Chip tone={tg.linked ? 'go' : tg.configured ? 'info' : 'muted'}>{tg.linked ? 'Linked' : tg.configured ? 'Not linked' : 'Not set up on this server'}</Chip>
             <Text tone="dust">
               {tg.linked
-                ? 'Countdown alerts and results also arrive from the bot.'
+                ? `${tg.username ? `@${tg.username}` : 'Your Telegram account'} signs in as this player, #${session.user.tag}. Countdown alerts and results also arrive from the bot.`
                 : tg.configured
-                  ? `Open the app from ${tg.bot ? `@${tg.bot}` : 'the bot'} in Telegram while signed in here to link your account.`
+                  ? `Link Telegram to sign in from the bot as this same player, #${session.user.tag}. Your history and tournaments stay on this one player.`
                   : 'The operator hasn’t connected a Telegram bot yet. Everything works in the browser.'}
             </Text>
-            {tg.configured && tg.bot && !tg.linked && !inTelegram() && (
-              <Button icon="telegram" onClick={() => window.open(`https://t.me/${tg.bot}?start=link`, '_blank', 'noopener')}>
-                Open the bot
+            {tg.configured && tg.bot && !tg.linked && (
+              <Button
+                icon="telegram"
+                busy={linking}
+                onClick={async () => {
+                  setLinking(true);
+                  const tab = reserveTab();
+                  try {
+                    const r = await post<{ linked: boolean; botUrl?: string }>('/api/me/telegram/link');
+                    if (r.linked || !r.botUrl) {
+                      tab?.close();
+                      await me.reload();
+                    } else {
+                      openTelegram(r.botUrl, tab);
+                      toast('Telegram is open. Tap Start in the bot chat to finish linking.', 'good');
+                    }
+                  } catch (e2) {
+                    tab?.close();
+                    toast((e2 as ApiError).message, 'error');
+                  } finally {
+                    setLinking(false);
+                  }
+                }}
+              >
+                Link Telegram
+              </Button>
+            )}
+            {tg.configured && !tg.linked && (
+              <Button variant="ghost" size="sm" icon="refresh" onClick={() => me.reload()}>
+                I tapped Start, check again
               </Button>
             )}
           </Stack>

@@ -2,7 +2,7 @@
  * The venue's objects: the things that make this product look like an
  * underground tournament and not a dashboard.
  *
- *   TapeMark     the NAME TBD placeholder, a strip of gaffer tape over the sign
+ *   TapeMark     the SHYST wordmark, stencilled on a strip of gaffer tape
  *   Bill         a tournament's flyposted fight-night poster (paper)
  *   TicketStub   the invite, as a ticket you tear off (paper)
  *   RoomCount    how many are in, as a stencilled number that slams on change
@@ -21,15 +21,15 @@ import s from './venue.module.css';
 export function TapeMark({ size = 'md', to }: { size?: 'md' | 'xl'; to?: string }) {
   const body = (
     <span className={cx(s.tape, size === 'xl' && s.tapeXl)}>
-      <span>NAME</span> <span>TBD</span>
+      SHYST
     </span>
   );
   return to ? (
-    <Link to={to} className={s.tapeLink} aria-label="NAME TBD, back to the hub">
+    <Link to={to} className={s.tapeLink} aria-label="SHYST, back to the hub">
       {body}
     </Link>
   ) : (
-    <span role="img" aria-label="NAME TBD">
+    <span role="img" aria-label="SHYST">
       {body}
     </span>
   );

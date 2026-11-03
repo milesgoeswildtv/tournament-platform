@@ -5,6 +5,7 @@
  *   - webhook  → ${API_URL}/api/telegram/webhook (with the secret header)
  *   - commands → /start, /join, /help
  *   - menu button → opens the web app as a Mini App
+ *   - name and descriptions → SHYST
  */
 const { TELEGRAM_BOT_TOKEN: token, TELEGRAM_WEBHOOK_SECRET: secret, APP_URL: app, API_URL: apiUrl } = process.env;
 if (!token || !secret || !app || !apiUrl) {
@@ -27,4 +28,6 @@ await call('setMyCommands', {
   ],
 });
 await call('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Play', web_app: { url: app } } });
-await call('setMyShortDescription', { short_description: 'Sponsored elimination tournaments. NAME TBD.' });
+await call('setMyName', { name: 'SHYST' });
+await call('setMyShortDescription', { short_description: 'SHYST: sponsored elimination tournaments.' });
+await call('setMyDescription', { description: 'SHYST runs sponsored elimination tournaments. Join with an invite, survive the stage, take the stage. Tap Play to open SHYST.' });

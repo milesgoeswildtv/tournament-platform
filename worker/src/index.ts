@@ -1,5 +1,5 @@
 import { GAME_META } from '../../shared/src/index';
-import { login, logout, register, telegramAuth, updateMe } from './auth';
+import { login, logout, register, startTelegramLink, telegramAuth, updateMe } from './auth';
 import { telegramWebhook } from './bot';
 import type { Env } from './env';
 import { HttpError, Router, corsHeaders, json } from './http';
@@ -32,6 +32,7 @@ const router = new Router()
   .post('/api/auth/telegram', telegramAuth)
   .get('/api/me', me)
   .patch('/api/me', updateMe)
+  .post('/api/me/telegram/link', startTelegramLink)
   .get('/api/me/notifications', notifications)
   .post('/api/me/notifications/read', markNotificationsRead)
   .get('/api/players/:tag', playerProfile)

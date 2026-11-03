@@ -14,7 +14,8 @@ Last updated: 2026-11-03.
 - **Gameplay room:** stage/round/timer bar, standing count, field dots, submission confirmation, verdict stamps, per-game reveals, rules sheet, players sheet and forfeit.
 - **Audit:** append-only `tournament_events` (gapless sequence), submissions with server receive times, eliminations with reasons, disconnects and reconnects, config history, and stage results. Database triggers refuse UPDATE/DELETE. There's an audit page for the sponsor and an admin page for everything.
 - **Fair play:** server-side validation of every action, duplicate/late/stale rejection, rate limits (D1 for HTTP, a token bucket for WebSockets), invite-use accounting that returns a use when a join is refused, sponsor-only controls, and the player cap enforced inside the room.
-- **Telegram:** `initData` HMAC validation, Mini App sign-in and account linking, bot webhook (`/start [code]`, `/join CODE`, `/help`), notifications for countdown and final results, and the setup script.
+- **Telegram:** `initData` HMAC validation, Mini App sign-in, bot webhook (`/start [code]`, `/join CODE`, `/start link_…`, `/help`), notifications for countdown and final results, and the setup script (sets the bot name and descriptions to SHYST).
+- **One player per person (Telegram linking, fixed 2026-11-03).** Telegram is a sign-in method on the canonical SHYST player, never a second player. *Settings → Link Telegram* issues a single-use, 15-minute token and opens `t.me/<bot>?start=link_<token>`; the bot's verified sender (or the Mini App's signed initData with `startapp=link_<token>`) attaches Telegram to that player. An empty Telegram-only duplicate (no login, tournaments or prizes) is reconciled into the player who proved both identities: kept, marked `merged_into`, its sessions revoked. A duplicate with history is refused, never merged. Every link, reconciliation and refusal is in the append-only `identity_events` table (migration `0002_telegram_identity.sql`). See `worker/src/identity.ts`.
 - **Visual identity: the venue** ([DESIGN.md](DESIGN.md)). Four materials (concrete, steel, paper, tape) and a fight-night **bill** for every tournament: on the invite, the lobby, the wizard's review step and the results page. The lobby is a live event: the bill, a players-in count that slams on each arrival, name plates with connection lamps, and a tear-off invite ticket. Each game has its own light and object (paint stripes, a split-flap counter, a ticket, letter tiles, dealer cards, a gauge, a task card). Final standings are a scoreboard with the prize inline. The app icon is the tape mark, rendered from the real fonts.
 - **Design-system guard in the build:** undefined CSS-module classes, inline style objects and raw colors outside tokens fail `build:web` (and so CI). There are zero inline style objects in the app.
 - Mobile-first with desktop supported. Generated music and sound effects, plus haptics.
@@ -31,7 +32,9 @@ Last updated: 2026-11-03.
 | `test:unit`: games, ties, payouts, config, lineups, room state machine, timers, late entry, permissions, duplicates, reconnection state, DO restart, Telegram `initData` | **71 / 71 pass** |
 | `test:integration` (18 tests): real Worker + Durable Object over HTTP and WebSocket. Covers accounts, the complete 4-player acceptance tournament (every game, hybrid payout, special awards), invite limits, expiry and regeneration, public/private, player cap, config versioning and locking, abort and cancel, sponsor disconnect, DO restart mid-run, duplicate/late/stale submissions, disconnect without stalling the round, reconnect, late entry and cutoff, all 7 games with 6 simultaneous players, and rate limits, Telegram sign-in + linking + webhook secret | **18 / 18 pass** |
 | `test:ui`: Chromium at 390×844, 375×667 and 1280×860. Sponsor signs up and builds the tournament in the wizard; a second player joins from the invite link; both see the same list and countdown; both play all 10 stages by tapping; both devices show the same final standings (rank by rank) and prizes; results, audit, history and leaderboard. No console errors and no horizontal overflow | **pass** |
-| `test:telegram-ui`: the Mini App opened the way Telegram opens it (signed `initData` in the URL hash, an invite as the start parameter) → server-validated sign-in → deep link → join | **pass** |
+| `test:integration` → `tests/identity.test.ts` (11 tests): bot and Mini App linking resolve to the original player; the bug state (empty Telegram-only duplicate) is reconciled with nothing deleted; a duplicate with history is refused; repeated linking, token replay and expired tokens create nothing; logout/login keeps the link; a signed-in Mini App player is never swapped; DB rows checked directly. Mutation-checked: breaking reconciliation or single-use tokens fails the suite | **pass** |
+| `test:telegram-ui`: the Mini App opened the way Telegram opens it → sign-in → deep link → join. Then linking through the real UI: sign up in a browser, *Link Telegram*, bot Start, Mini App in a separate browser context → the same Player ID everywhere and one identity on the profile, across 3 opens and a logout/login, with one DB row | **pass** |
+| `scripts/verify-telegram-link.ts` (run by *Verify production* against the live API with a synthetic Telegram id): account creation, link, Telegram sign-in → same player, logout/login, repeats, a second player can't take the account | **pass** |
 | Web bundle secret check (no Decode answers or Speedrun tasks in client JS) | **pass** |
 | Design-system guard (`check:design`): 36 components, every module class defined, no inline style objects, colors from tokens | **pass** |
 | Visual review: every screen and every game phase screenshotted at 375×667, 390×844 and 1280×860 and reviewed; static screens also at 430×932 (`npm run shots`) | **done** |
@@ -43,6 +46,9 @@ All of the above also run in GitHub Actions on every push.
 
 ## Known defects and limitations
 
+- **Your own accounts:** production has the pair this bug created: *Protocol* #4H6PQP (login, not linked) and an empty Telegram-only *Samoxic* #D22EUG (@Samoxic). Neither has any tournaments. Sign in as Protocol, open *Settings → Link Telegram* and tap Start in the bot: Telegram moves onto #4H6PQP and #D22EUG is marked merged (kept, not deleted). Nothing was changed in production data on your behalf.
+- **Infrastructure names keep `tournament-platform`** (GitHub repo, Pages project, Worker, D1 database, and therefore the URLs). They are not shown as the product name; renaming them would change the live URLs and the database binding.
+- The bot's @username can only be changed in @BotFather; the setup script sets its display name and descriptions to SHYST.
 - **The Mini App hasn't been opened from inside the real Telegram app during the build.** The bot token is configured on the live API, and validation is covered by unit tests with independently signed payloads plus a browser test that opens the app the way Telegram does.
 - Players get a bill, tags and a scoreboard sized for up to about 60 visible names; a 200-player lobby scrolls the tag grid (by design) and hides the in-round field dots above 60.
 - Prize amounts are **commitments only**, by design. There is no payment processing.
@@ -57,7 +63,7 @@ None are blocking. Cloudflare and Telegram secrets are in place, and deploys run
 
 1. **Recommended:** open the bot in Telegram on your phone, tap the Mini App button and play a short tournament with a second account, to confirm the in-Telegram experience end to end.
 2. **Optional:** set `ADMIN_HANDLES` in `wrangler.jsonc` to your username to get the admin page.
-3. **Optional:** add the app to your iPhone home screen (Share → Add to Home Screen). It opens standalone with the NAME TBD tape icon.
+3. **Optional:** add the app to your iPhone home screen (Share → Add to Home Screen). It opens standalone as SHYST, with the tape icon.
 
 ## Unfinished / next
 

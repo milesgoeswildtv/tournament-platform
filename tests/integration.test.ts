@@ -467,7 +467,7 @@ describe('Telegram (server configured with a bot token)', () => {
     return new URLSearchParams({ ...fields, hash: createHmac('sha256', secret).update(check).digest('hex') }).toString();
   };
   before(async () => {
-    tg = await startDevServer({ quiet: true, staticDir: null, timeScale: SCALE, extraEnv: { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_WEBHOOK_SECRET: 'hook-secret-123', TELEGRAM_BOT_USERNAME: 'tbd_test_bot' } });
+    tg = await startDevServer({ quiet: true, staticDir: null, timeScale: SCALE, extraEnv: { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_WEBHOOK_SECRET: 'hook-secret-123', TELEGRAM_BOT_USERNAME: 'shyst_test_bot' } });
   });
   after(async () => {
     await tg.close();
@@ -497,7 +497,7 @@ describe('Telegram (server configured with a bot token)', () => {
     assert.equal(r.data.user.id, c.user.id);
     const me = await c.api('GET', '/api/me');
     assert.equal(me.data.telegram.linked, true);
-    assert.equal(me.data.telegram.bot, 'tbd_test_bot');
+    assert.equal(me.data.telegram.bot, 'shyst_test_bot');
   });
 
   test('webhook requires the registered secret header', async () => {

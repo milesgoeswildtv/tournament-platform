@@ -2,6 +2,7 @@ import type { Env } from './env';
 import { HttpError, readJson, str, json, clientIp, type RouteCtx } from './http';
 import { b64url, hashPassword, newId, newTag, now, randomBytes, rateLimit, sha256Hex, timingSafeEqual } from './security';
 import { validateInitData } from './telegram';
+import { LINK_PREFIX, attachTelegram, consumeLinkToken, issueLinkToken, type LinkOutcome } from './identity';
 
 export interface UserRow {
   id: string;
@@ -14,6 +15,7 @@ export interface UserRow {
   telegram_username: string | null;
   is_admin: number;
   created_at: number;
+  merged_into?: string | null;
 }
 
 export interface AuthUser {
@@ -49,7 +51,7 @@ export async function userFromToken(env: Env, token: string | null): Promise<Use
   if (!token || token.length > 128) return null;
   const hash = await sha256Hex(token);
   return env.DB.prepare(
-    `SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?`,
+    `SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ? AND u.merged_into IS NULL`,
   )
     .bind(hash, now())
     .first<UserRow>();
@@ -140,7 +142,14 @@ export async function logout(c: RouteCtx): Promise<Response> {
 /**
  * Telegram Mini App sign-in. The signed initData is validated with the bot
  * token; nothing the browser claims about the user is trusted on its own.
- * If a signed-in browser session is present, the Telegram account is linked to it.
+ *
+ * Resolution, in order (see identity.ts):
+ *  1. start_param link_<token>: the token names the SHYST player who asked to
+ *     link; Telegram is attached to that player and the Mini App signs in as it.
+ *  2. a player already linked to this Telegram account signs in.
+ *  3. a SHYST session already open inside the Mini App gets Telegram attached.
+ *     A different signed-in player is never swapped out silently.
+ *  4. otherwise this is a new person: a Telegram-only player is created.
  */
 export async function telegramAuth(c: RouteCtx): Promise<Response> {
   if (!c.env.TELEGRAM_BOT_TOKEN) throw new HttpError(503, 'telegram_not_configured', 'Telegram sign-in is not configured on this server.');
@@ -148,28 +157,63 @@ export async function telegramAuth(c: RouteCtx): Promise<Response> {
   const body = await readJson(c.req);
   const data = await validateInitData(String(body.initData ?? ''), c.env.TELEGRAM_BOT_TOKEN);
   if (!data) throw new HttpError(401, 'invalid_telegram_auth', 'Telegram sign-in could not be verified.');
-  const tgId = String(data.user.id);
+  const tg = { id: String(data.user.id), username: data.user.username ?? null };
   const t = now();
-  let user = await c.env.DB.prepare('SELECT * FROM users WHERE telegram_id = ?').bind(tgId).first<UserRow>();
   const current = await optionalUser(c);
-  if (!user && current && !current.telegram_id) {
-    await c.env.DB.prepare('UPDATE users SET telegram_id = ?, telegram_username = ?, updated_at = ? WHERE id = ?')
-      .bind(tgId, data.user.username ?? null, t, current.id)
-      .run();
-    user = { ...current, telegram_id: tgId };
+  let startParam = data.startParam;
+  let link: { ok: boolean; message: string; reconciled?: string } | null = null;
+  let user: UserRow | null = null;
+
+  const report = (o: LinkOutcome, verb: string) => {
+    link = o.ok ? { ok: true, message: o.already ? 'Telegram was already linked to this player.' : verb, reconciled: o.reconciled?.tag } : { ok: false, message: o.message };
+    return o.ok ? o.user : null;
+  };
+
+  if (startParam?.startsWith(LINK_PREFIX)) {
+    const target = await consumeLinkToken(c.env, startParam.slice(LINK_PREFIX.length), tg.id);
+    startParam = null;
+    if (target) user = report(await attachTelegram(c.env, target, tg, 'miniapp'), 'Telegram linked.');
+    else link = { ok: false, message: 'That link has expired or was already used. Start again from Settings.' };
+  }
+  if (!user) user = await c.env.DB.prepare('SELECT * FROM users WHERE telegram_id = ? AND merged_into IS NULL').bind(tg.id).first<UserRow>();
+  if (!link && current && !current.telegram_id && current.id !== user?.id) {
+    const linked = report(await attachTelegram(c.env, current, tg, 'miniapp-session'), 'Telegram linked.');
+    // Keep the player who is signed in here, even when the link was refused.
+    user = linked ?? current;
   }
   if (!user) {
-    const name = [data.user.first_name, data.user.last_name].filter(Boolean).join(' ').trim() || data.user.username || `Player ${tgId.slice(-4)}`;
+    const name = [data.user.first_name, data.user.last_name].filter(Boolean).join(' ').trim() || data.user.username || `Player ${tg.id.slice(-4)}`;
     const id = newId('u');
     await c.env.DB.prepare(
       'INSERT INTO users (id, tag, handle, display_name, telegram_id, telegram_username, created_at, updated_at) VALUES (?, ?, NULL, ?, ?, ?, ?, ?)',
     )
-      .bind(id, await uniqueTag(c.env), name.replace(/[<>]/g, '').slice(0, 24).padEnd(2, '_'), tgId, data.user.username ?? null, t, t)
+      .bind(id, await uniqueTag(c.env), name.replace(/[<>]/g, '').slice(0, 24).padEnd(2, '_'), tg.id, tg.username, t, t)
       .run();
     user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<UserRow>();
   }
   const token = await createSession(c.env, user!.id, c.req.headers.get('user-agent'));
-  return json({ token, user: publicUser(user!), startParam: data.startParam });
+  return json({ token, user: publicUser(user!), startParam, link });
+}
+
+/**
+ * Starts linking Telegram to the signed-in player: issues a single-use token
+ * and returns the Telegram links that carry it (bot chat and, if registered,
+ * the Mini App).
+ */
+export async function startTelegramLink(c: RouteCtx): Promise<Response> {
+  const u = await requireUser(c);
+  const bot = c.env.TELEGRAM_BOT_USERNAME;
+  if (!c.env.TELEGRAM_BOT_TOKEN || !bot) throw new HttpError(503, 'telegram_not_configured', 'Telegram isn’t set up on this server.');
+  if (u.telegram_id) return json({ linked: true, telegramUsername: u.telegram_username });
+  await rateLimit(c.env, `tglink:${u.id}`, 10, 3600);
+  const { token, expiresAt } = await issueLinkToken(c.env, u.id);
+  const param = `${LINK_PREFIX}${token}`;
+  return json({
+    linked: false,
+    expiresAt,
+    botUrl: `https://t.me/${bot}?start=${param}`,
+    miniAppUrl: c.env.TELEGRAM_MINIAPP_SHORTNAME ? `https://t.me/${bot}/${c.env.TELEGRAM_MINIAPP_SHORTNAME}?startapp=${param}` : null,
+  });
 }
 
 export async function updateMe(c: RouteCtx): Promise<Response> {

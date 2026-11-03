@@ -1,8 +1,8 @@
-# NAME TBD — tournament platform
+# SHYST
 
 Sponsors put up prizes and configure a tournament of 10–25 **stages**. Each stage is one **game**, and a game may run several internal **rounds**. Players join with an invite, play every stage live on their phones, and the server decides every outcome. Results, standings and prize allocations are recorded as an append-only audit trail.
 
-`NAME TBD` is temporary branding. The product name is undecided.
+SHYST is the product name. Infrastructure identifiers (the `tournament-platform` repository, Cloudflare Pages project, Worker and D1 database, and their URLs) keep their original names so existing deployments, data and links keep working.
 
 > Prize amounts are **sponsor commitments**. The platform records them and calculates who earns them. It does not take deposits, hold money or make payments; every allocation is stored as `COMMITTED_UNPAID`.
 
