@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GAME_META, type RoomView } from '@shared/client';
 import { ApiError, get, post, type TournamentSummary } from '../lib/api';
 import { useRoom } from '../lib/room';
+import { useWide } from '../lib/media';
 import { navigate } from '../lib/router';
 import { useLoad } from '../lib/useLoad';
 import { audio } from '../lib/audio';
@@ -81,6 +82,7 @@ export function RoomScreen({ id }: { id: string }) {
 
 function Room({ id }: { id: string }) {
   const { view, status, send, serverNow } = useRoom(id);
+  const wide = useWide();
   const [sheet, setSheet] = useState<null | 'chat' | 'players' | 'menu' | 'confirm-leave'>(null);
   const seenChat = useRef(0);
   const [, force] = useState(0);
@@ -151,7 +153,7 @@ function Room({ id }: { id: string }) {
       </div>
       <div className={s.barActions}>
         <IconButton icon="users" label="Players" onClick={() => setSheet('players')} />
-        <IconButton icon="chat" label="Chat" badge={unread} onClick={() => setSheet('chat')} />
+        {!(wide && phase === 'LOBBY') && <IconButton icon="chat" label="Chat" badge={unread} onClick={() => setSheet('chat')} />}
         {(onFloor || phase === 'STAGE_INTRO' || phase === 'STAGE_RESULT') && <IconButton icon="info" label="Rules and options" onClick={() => setSheet('menu')} />}
       </div>
     </header>

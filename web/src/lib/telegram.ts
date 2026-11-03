@@ -53,8 +53,8 @@ export async function bootTelegram(hasSession: boolean): Promise<string | null> 
   try {
     app?.ready();
     app?.expand();
-    app?.setHeaderColor?.('#060606');
-    app?.setBackgroundColor?.('#060606');
+    app?.setHeaderColor?.('#0e0e0c');
+    app?.setBackgroundColor?.('#0e0e0c');
     app?.disableVerticalSwipes?.();
   } catch {
     /* older clients */

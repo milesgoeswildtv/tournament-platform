@@ -82,6 +82,21 @@ for (const sz of sizes) {
     const wide = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (wide > 0) console.log(`horizontal overflow on ${sz.name}-${name}: ${wide}px`);
   }
+  if (!only.length || only.includes('sheets')) {
+    await page.goto(`${server.url}/t/${t.id}`);
+    await page.waitForTimeout(600);
+    await page.getByRole('button', { name: 'Players', exact: true }).click();
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${OUT}${sz.name}-sheet-players.png` });
+    await page.getByRole('button', { name: 'Close' }).click();
+    await page.getByRole('button', { name: 'Chat', exact: true }).click();
+    await page.waitForTimeout(350);
+    await page.getByLabel('Message').last().fill('Doors open at nine. Bring your A game.');
+    await page.getByRole('button', { name: 'Send' }).last().click();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}${sz.name}-sheet-chat.png` });
+    await page.getByRole('button', { name: 'Close' }).click();
+  }
   if (!only.length || only.includes('lobby-player')) {
     await page.evaluate(([token, user]) => localStorage.setItem('tp.session.v1', JSON.stringify({ token, user })), [pals[0].token, pals[0].user] as const);
     await page.goto(`${server.url}/t/${t.id}`);

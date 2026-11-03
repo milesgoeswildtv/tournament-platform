@@ -187,7 +187,8 @@
 .stageBar {
   display: grid;
   gap: var(--s-2);
-  padding: var(--s-2) var(--gutter) var(--s-3);
+  /* on wide screens the timer stays over the board, not across the window */
+  padding: var(--s-2) max(var(--gutter), calc((100% - 640px) / 2)) var(--s-3);
   border-bottom: 1px solid var(--char);
   box-shadow: inset 0 2px 0 var(--accent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent);

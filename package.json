@@ -24,7 +24,8 @@
     "test:all": "npm run test:unit && npm run test:integration && npm run build:web && npm run test:ui && npm run test:telegram-ui",
     "shots": "node --experimental-sqlite --no-warnings --import tsx scripts/shots.ts",
     "test:telegram-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-telegram.ts",
-    "check:design": "node scripts/check-css.mjs"
+    "check:design": "node scripts/check-css.mjs",
+    "icons": "node --import tsx scripts/icons.ts"
   },
   "dependencies": {
     "react": "^19.2.0",

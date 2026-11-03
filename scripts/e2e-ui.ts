@@ -171,13 +171,15 @@ assert.deepEqual(await names(A), [NAMES.host, NAMES.player, NAMES.bot].sort());
 await shot(B, '10-lobby-player', true);
 log('both see the same player list:', (await names(A)).join(', '));
 
-// chat
-await B.getByRole('button', { name: 'Chat' }).click();
+// chat: a sheet on phones, inline beside the lobby on desktop
+const wide = vw >= 960;
+if (!wide) await B.getByRole('button', { name: 'Chat', exact: true }).click();
 await B.getByLabel('Message').fill('Ready when you are.');
 await B.getByRole('button', { name: 'Send' }).click();
-await A.getByRole('button', { name: /Ready when you are/ }).waitFor();
+if (wide) await A.locator('aside').getByText('Ready when you are.').waitFor();
+else await A.getByRole('button', { name: /Ready when you are/ }).waitFor();
 await shot(B, '11-chat');
-await B.getByRole('button', { name: 'Close' }).click();
+if (!wide) await B.getByRole('button', { name: 'Close' }).click();
 
 // ------------------------------------------------------------------ start + countdown
 
