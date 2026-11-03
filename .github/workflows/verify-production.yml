@@ -1,0 +1,44 @@
+name: Verify production
+
+# Plays a complete two-player tournament in a phone-sized browser against the
+# deployed app (fresh QA accounts, real server timers). Runs after a successful
+# CI / Deploy when the commit message contains [verify-prod], or on demand.
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: Web app URL (Cloudflare Pages)
+        default: https://tournament-platform-9fd.pages.dev
+      api_url:
+        description: API URL (Worker)
+        default: https://tournament-platform-api.afterdarklabs.workers.dev
+  workflow_run:
+    workflows: [CI / Deploy]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_commit.message, '[verify-prod]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      E2E_APP_URL: ${{ inputs.app_url || 'https://tournament-platform-9fd.pages.dev' }}
+      E2E_API_URL: ${{ inputs.api_url || 'https://tournament-platform-api.afterdarklabs.workers.dev' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Health
+        run: curl -fsS "$E2E_API_URL/api/health"
+      - name: Full tournament in the browser against production
+        run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-screenshots
+          path: screens/
+          if-no-files-found: ignore

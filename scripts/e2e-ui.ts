@@ -13,6 +13,9 @@
  * screen land in screens/e2e-*.png for visual review.
  *
  *   npm run build:web && npm run test:ui
+ *
+ * Against a deployment (real timers, fresh QA accounts, no server peeking):
+ *   E2E_APP_URL=https://….pages.dev E2E_API_URL=https://….workers.dev npm run test:ui
  */
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -33,7 +36,14 @@ mkdirSync(OUT, { recursive: true });
 const t0 = Date.now();
 const log = (...a: unknown[]) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s]`, ...a);
 
-const server = await startDevServer({ quiet: true, timeScale: SCALE });
+const REMOTE = !!process.env.E2E_APP_URL;
+const server = REMOTE ? null : await startDevServer({ quiet: true, timeScale: SCALE });
+const APP = (process.env.E2E_APP_URL ?? server!.url).replace(/\/$/, '');
+const API = (process.env.E2E_API_URL ?? server!.url).replace(/\/$/, '');
+const sfx = REMOTE ? `_${Math.random().toString(36).slice(2, 7)}` : '';
+const NAMES = REMOTE ? { host: 'QA Sponsor', player: 'QA Player', bot: 'QA Bot' } : { host: 'Mara Quill', player: 'Dex Rowe', bot: 'Ike Vance' };
+const TITLE = REMOTE ? 'Production smoke test' : 'Acceptance Night';
+if (REMOTE) console.log(`remote run against ${APP} (API ${API})`);
 const browser = await chromium.launch();
 const [vw, vh] = (process.env.VIEWPORT ?? '390x844').split('x').map(Number);
 const device = { viewport: { width: vw, height: vh }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
@@ -91,17 +101,17 @@ const attr = (page: Page, a: string) => page.locator('[data-phase]').first().get
 // ------------------------------------------------------------------ sponsor creates the tournament
 
 const A = await open('sponsor');
-await A.goto(`${server.url}/auth`);
+await A.goto(`${APP}/auth`);
 await shot(A, '01-auth');
-await signUp(A, 'mara', 'Mara Quill');
-await A.waitForURL(`${server.url}/`);
+await signUp(A, `qa_host${sfx}`, NAMES.host);
+await A.waitForURL(`${APP}/`);
 await A.getByText('Join with a code').waitFor();
 await shot(A, '02-hub');
 log('sponsor signed up');
 
-await A.goto(`${server.url}/sponsor`);
+await A.goto(`${APP}/sponsor`);
 await A.getByRole('link', { name: 'New tournament' }).click();
-await A.getByLabel('Tournament name').fill('Acceptance Night');
+await A.getByLabel('Tournament name').fill(TITLE);
 await shot(A, '03-create-basics');
 await A.getByRole('button', { name: 'Next: Prizes' }).click();
 await A.getByRole('radio', { name: /Hybrid/ }).click();
@@ -111,7 +121,9 @@ await A.getByRole('button', { name: 'Add a special award' }).click();
 await shot(A, '04-create-prizes', true);
 await A.getByRole('button', { name: 'Next: Stages' }).click();
 await A.getByRole('radio', { name: 'Pick each stage' }).click();
-const lineup = Array.from({ length: 10 }, (_, i) => GAME_IDS[i % GAME_IDS.length]);
+// Remote runs use real timers, so the lineup favours games that close as soon as everyone acts.
+const QUICK = ['zero-hour', 'pressure-cooker', 'guess-color', 'suited-up', 'high-low'] as const;
+const lineup = Array.from({ length: 10 }, (_, i) => (REMOTE ? QUICK[i % QUICK.length] : GAME_IDS[i % GAME_IDS.length]));
 for (let i = 0; i < 10; i++) await A.getByLabel(`Stage ${i + 1} game`).selectOption(lineup[i]);
 await shot(A, '05-create-stages', true);
 await A.getByRole('button', { name: 'Next: Timing' }).click();
@@ -134,28 +146,28 @@ log('tournament created', tid, 'invite', code);
 // ------------------------------------------------------------------ second player joins from the invite
 
 const B = await open('player');
-await B.goto(`${server.url}/j/${code}`);
-await B.getByText('Acceptance Night').waitFor();
+await B.goto(`${APP}/j/${code}`);
+await B.getByText(TITLE).waitFor();
 await shot(B, '09-invite-signed-out');
 await B.getByRole('link', { name: 'Create account to join' }).click();
-await signUp(B, 'dex', 'Dex Rowe');
-await B.waitForURL(`${server.url}/j/${code}`);
+await signUp(B, `qa_player${sfx}`, NAMES.player);
+await B.waitForURL(`${APP}/j/${code}`);
 await B.getByRole('button', { name: 'Join tournament' }).click();
-await B.waitForURL(`${server.url}/t/${tid}`);
+await B.waitForURL(`${APP}/t/${tid}`);
 log('player joined via invite link');
 
 // third player: a bot over the API
-const C = await Client.register(server.url, 'ike', 'Ike Vance');
+const C = await Client.register(API, `qa_bot${sfx}`, NAMES.bot);
 assert.equal((await C.api('POST', '/api/join', { code })).status, 200);
 await C.connect(tid);
-const peek = () => (server.env.ROOMS.states.get(tid)?.storage as any)?.snapshot()?.room;
+const peek = () => (server?.env.ROOMS.states.get(tid)?.storage as any)?.snapshot()?.room;
 const stopBot = autoplay(C, { peek, skill: 0.5 });
 
 const names = async (p: Page) => (await p.locator('[data-phase="LOBBY"] [data-player]').evaluateAll((els) => els.map((e) => e.getAttribute('data-player') ?? ''))).sort();
 await A.getByText('3 of 50').waitFor();
 await B.getByText('3 of 50').waitFor();
 assert.deepEqual(await names(A), await names(B));
-assert.deepEqual(await names(A), ['Dex Rowe', 'Ike Vance', 'Mara Quill']);
+assert.deepEqual(await names(A), [NAMES.host, NAMES.player, NAMES.bot].sort());
 await shot(B, '10-lobby-player', true);
 log('both see the same player list:', (await names(A)).join(', '));
 
@@ -272,23 +284,23 @@ await shot(A, '40-final-host', true);
 await shot(B, '41-final-player', true);
 
 const finalNames = async (p: Page) => (await p.locator('table').first().locator('tbody tr td:nth-child(2)').allTextContents()).sort();
-assert.deepEqual(await finalNames(A), ['Dex Rowe', 'Ike Vance', 'Mara Quill']);
+assert.deepEqual(await finalNames(A), [NAMES.host, NAMES.player, NAMES.bot].sort());
 assert.deepEqual(await finalNames(A), await finalNames(B));
 
 await A.getByRole('link', { name: 'Full results and stage history' }).click();
 await A.getByText('Stage by stage').waitFor();
 await shot(A, '42-results', true);
-await A.goto(`${server.url}/t/${tid}/audit`);
+await A.goto(`${APP}/t/${tid}/audit`);
 await A.getByText('Event history').waitFor();
 await shot(A, '43-audit');
 
-await B.goto(`${server.url}/me`);
-await B.getByText('Acceptance Night').first().waitFor();
+await B.goto(`${APP}/me`);
+await B.getByText(TITLE).first().waitFor();
 await shot(B, '44-profile', true);
-await B.goto(`${server.url}/ranks`);
-await B.getByText('Dex Rowe').waitFor();
+await B.goto(`${APP}/ranks`);
+await B.getByText(NAMES.player).first().waitFor();
 await shot(B, '45-ranks');
-await B.goto(`${server.url}/`);
+await B.goto(`${APP}/`);
 await B.getByText('History').waitFor();
 await shot(B, '46-hub-after', true);
 
@@ -299,7 +311,7 @@ assert.equal(res.data.allocations.reduce((n: number, a: any) => n + a.amount_cen
 
 await C.disconnect();
 await browser.close();
-await server.close();
+await server?.close();
 
 if (overflow.length) {
   console.error(`horizontal overflow:\n  ${overflow.join('\n  ')}`);
