@@ -7,6 +7,7 @@ import { Button } from '../../ui/controls';
 import { Chip, Note, Section, Who } from '../../ui/layout';
 import { GameMark } from '../../ui/GameMark';
 import { ChatPanel } from './Chat';
+import { useWide } from '../../lib/media';
 import s from './room.module.css';
 
 export function PrizeBoard({ view }: { view: RoomView }) {
@@ -139,6 +140,7 @@ export function Lobby({ view, send, openChat, onLeave }: { view: RoomView; send:
   const canStart = competitors.length >= 2;
   const last = [...view.chat].reverse().find((m) => !m.system) ?? view.chat[view.chat.length - 1];
   const c = view.config;
+  const wide = useWide();
 
   const actions = (
     <>
@@ -183,7 +185,7 @@ export function Lobby({ view, send, openChat, onLeave }: { view: RoomView; send:
         <div className={s.lobbyMain}>
         <PrizeBoard view={view} />
 
-        {isHost && <div className={s.phoneOnly}><InvitePanel tid={view.id} title={view.title} phase={view.phase} /></div>}
+        {isHost && !wide && <InvitePanel tid={view.id} title={view.title} phase={view.phase} />}
 
         <Section title="Players" aside={`${competitors.length} of ${c.entry.maxPlayers}`}>
           <div className={s.players}>
@@ -209,7 +211,8 @@ export function Lobby({ view, send, openChat, onLeave }: { view: RoomView; send:
           </p>
         </Section>
 
-        <button type="button" className={`${s.ticker} ${s.phoneOnly}`} onClick={openChat}>
+        {!wide && (
+        <button type="button" className={s.ticker} onClick={openChat}>
           {last ? (
             <>
               <b>{last.system ? 'Room' : last.name}</b>
@@ -219,9 +222,11 @@ export function Lobby({ view, send, openChat, onLeave }: { view: RoomView; send:
             <span>Open chat</span>
           )}
         </button>
+        )}
 
         <Note>Prizes are the sponsor’s commitment. The platform calculates who earns them; it doesn’t move money.</Note>
         </div>
+        {wide && (
         <aside className={s.lobbySide}>
           <div className={s.sideActions}>{actions}</div>
           {isHost && <InvitePanel tid={view.id} title={view.title} phase={view.phase} />}
@@ -231,11 +236,14 @@ export function Lobby({ view, send, openChat, onLeave }: { view: RoomView; send:
             </div>
           </Section>
         </aside>
+        )}
       </div>
 
-      <div className={`${s.dock} ${s.phoneOnly}`}>
-        <div className={s.dockInner}>{actions}</div>
-      </div>
+      {!wide && (
+        <div className={s.dock}>
+          <div className={s.dockInner}>{actions}</div>
+        </div>
+      )}
     </>
   );
 }

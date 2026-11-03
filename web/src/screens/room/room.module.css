@@ -39,7 +39,6 @@
   .lobby { max-width: 1120px; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); column-gap: var(--s-10); align-items: start; }
   .lobbyHead { grid-column: 1 / -1; }
   .lobbySide { display: grid; gap: var(--s-8); }
-  .phoneOnly { display: none !important; }
   .lobby { padding-bottom: var(--s-12); }
   .sideActions { display: grid; gap: var(--s-2); }
   .sideChat { height: 360px; }
