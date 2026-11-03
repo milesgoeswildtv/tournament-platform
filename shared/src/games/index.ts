@@ -7,6 +7,7 @@ import { decode } from './decode';
 import { suitedUp } from './suitedUp';
 import { pressureCooker } from './pressureCooker';
 import { speedrun } from './speedrun';
+import { flood } from './flood';
 
 /**
  * The only place the engine learns which games exist. To add a game, implement
@@ -20,6 +21,7 @@ export const GAMES: Record<GameId, GameDefinition<BaseState>> = {
   'suited-up': suitedUp as unknown as GameDefinition<BaseState>,
   'pressure-cooker': pressureCooker as unknown as GameDefinition<BaseState>,
   speedrun: speedrun as unknown as GameDefinition<BaseState>,
+  flood: flood as unknown as GameDefinition<BaseState>,
 };
 
 export function getGame(id: GameId): GameDefinition<BaseState> {

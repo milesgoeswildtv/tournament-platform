@@ -68,6 +68,8 @@ export function botAction(room: RoomCore, playerId: string, rng: Rng, skill = 0.
       return { type: 'cashout' };
     case 'speedrun':
       return { answer: rng.float() < skill ? g.task.answer : 'nope' };
+    case 'flood':
+      return { platform: rng.int(0, g.platforms - 1) };
   }
   return null;
 }

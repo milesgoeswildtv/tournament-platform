@@ -305,3 +305,92 @@ describe('Randomizer Speedrun', () => {
     }
   });
 });
+
+describe('The Flood', () => {
+  test('sizes: half the players flood, capped at half the platforms', async () => {
+    const { floodSizes } = await import('../shared/src/games/flood');
+    assert.deepEqual(floodSizes(2), { platforms: 4, flooded: 1 });
+    assert.deepEqual(floodSizes(3), { platforms: 4, flooded: 1 });
+    assert.deepEqual(floodSizes(8), { platforms: 8, flooded: 4 });
+    assert.deepEqual(floodSizes(9), { platforms: 9, flooded: 4 });
+    assert.deepEqual(floodSizes(20), { platforms: 20, flooded: 10 });
+    assert.deepEqual(floodSizes(200), { platforms: 20, flooded: 10 });
+    for (let n = 1; n <= 300; n++) {
+      const { platforms, flooded } = floodSizes(n);
+      assert.ok(flooded >= 1 && flooded <= platforms / 2, `n=${n}`);
+    }
+  });
+  test('flood is drawn before picks, distinct, in range, and hidden until resolve', () => {
+    const g = getGame('flood');
+    const rng = seededRng(11);
+    let s: any = g.init(['a', 'b', 'c', 'd', 'e', 'f'], ctx(rng));
+    s = g.startRound(s, { startedAt: 0, endsAt: 10 }, ctx(rng));
+    assert.equal(s.platforms, 6);
+    assert.equal(s.flood.length, 3);
+    assert.equal(new Set(s.flood).size, 3);
+    assert.ok(s.flood.every((x: number) => x >= 0 && x < 6));
+    const pub = JSON.stringify(g.publicView(s));
+    assert.ok(!pub.includes('"flood"'), 'the drawn flood is not public');
+    assert.deepEqual((g.publicView(s) as any).floods, 3);
+  });
+  test('wet and missing picks are out, dry survive; duplicate and invalid picks refused', () => {
+    const g = getGame('flood');
+    const rng = scripted([1, 2, 3, 4]); // tiebreaks
+    let s: any = g.init(['a', 'b', 'c', 'd'], ctx(rng));
+    s = g.startRound(s, { startedAt: 0, endsAt: 10 }, ctx(rng));
+    s = { ...s, flood: [0, 1] }; // fixed for the test: platforms 1 and 2 flood
+    s = (g.act(s, 'a', { platform: 0 }, ctx(rng)) as any).state;
+    s = (g.act(s, 'b', { platform: 2 }, ctx(rng)) as any).state;
+    s = (g.act(s, 'c', { platform: 3 }, ctx(rng)) as any).state;
+    assert.deepEqual(g.act(s, 'a', { platform: 2 }, ctx(rng)), { ok: false, error: 'already_submitted' });
+    assert.deepEqual(g.act(s, 'd', { platform: 4 }, ctx(rng)), { ok: false, error: 'invalid_platform' });
+    assert.deepEqual(g.act(s, 'd', { platform: 1.5 }, ctx(rng)), { ok: false, error: 'invalid_platform' });
+    assert.equal(g.roundReady(s), false);
+    const r = g.resolveRound(s, ctx(rng));
+    assert.deepEqual(r.state.alive.sort(), ['b', 'c']);
+    assert.deepEqual(Object.fromEntries(r.result.eliminated.map((e) => [e.playerId, e.reason])), { a: 'Platform 1 flooded', d: 'Didn’t pick a platform' });
+    assert.deepEqual((r.result.reveal as any).flooded, [0, 1]);
+    assert.deepEqual((r.result.reveal as any).occupancy, [1, 0, 1, 1]);
+    assert.deepEqual((g.publicView(r.state) as any).lastFlood, [0, 1], 'last tide’s flood is shown next round');
+  });
+  test('a previously flooded platform can be safe; everyone wet → void replay; cap → shared win', () => {
+    const g = getGame('flood');
+    const rng = seededRng(5);
+    let s: any = g.init(['a', 'b'], ctx(rng));
+    s = { ...g.startRound(s, { startedAt: 0, endsAt: 10 }, ctx(rng)), flood: [2] };
+    s = (g.act(s, 'a', { platform: 2 }, ctx(rng)) as any).state;
+    s = (g.act(s, 'b', { platform: 2 }, ctx(rng)) as any).state;
+    let r = g.resolveRound(s, ctx(rng));
+    assert.equal(r.result.voided, true);
+    assert.deepEqual(r.state.alive.sort(), ['a', 'b']);
+    // next tide: platform 3 (flooded last time) is dry
+    s = { ...g.startRound(r.state, { startedAt: 20, endsAt: 30 }, ctx(rng)), flood: [0] };
+    s = (g.act(s, 'a', { platform: 2 }, ctx(rng)) as any).state;
+    s = (g.act(s, 'b', { platform: 2 }, ctx(rng)) as any).state;
+    r = g.resolveRound(s, ctx(rng));
+    assert.deepEqual(r.state.alive.sort(), ['a', 'b']);
+    s = r.state;
+    for (let i = 2; i < 10; i++) {
+      s = { ...g.startRound(s, { startedAt: i * 10, endsAt: i * 10 + 9 }, ctx(rng)), flood: [0] };
+      s = (g.act(s, 'a', { platform: 1 }, ctx(rng)) as any).state;
+      s = (g.act(s, 'b', { platform: 3 }, ctx(rng)) as any).state;
+      s = g.resolveRound(s, ctx(rng)).state;
+    }
+    assert.equal(s.done, true);
+    assert.deepEqual(g.outcome(s).winners.sort(), ['a', 'b']);
+  });
+  test('last player standing wins', () => {
+    const g = getGame('flood');
+    const rng = seededRng(9);
+    let s: any = g.init(['a', 'b', 'c'], ctx(rng));
+    s = { ...g.startRound(s, { startedAt: 0, endsAt: 10 }, ctx(rng)), flood: [0] };
+    s = (g.act(s, 'a', { platform: 1 }, ctx(rng)) as any).state;
+    s = (g.act(s, 'b', { platform: 0 }, ctx(rng)) as any).state;
+    s = (g.act(s, 'c', { platform: 0 }, ctx(rng)) as any).state;
+    const r = g.resolveRound(s, ctx(rng));
+    assert.equal(r.state.done, true);
+    const o = g.outcome(r.state);
+    assert.deepEqual(o.winners, ['a']);
+    assert.equal(o.ranking[0], 'a');
+  });
+});

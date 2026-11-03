@@ -132,6 +132,25 @@ export const GAME_META_DATA: Record<GameId, GameMeta> = {
     winRule: 'Last player standing wins the stage.',
     tieRule: 'Still more than one after 12 tasks: lowest total answer time wins; exact ties fall to a server-drawn order.',
   },
+  flood: {
+    id: 'flood',
+    name: 'The Flood',
+    tagline: 'Pick high ground. It moves.',
+    description: 'Stand on a platform. Each round the server floods half as many platforms as there are players. Anyone on a flooded platform is out.',
+    instructions: [
+      'Pick one platform before the timer runs out. Your pick is private.',
+      'The server has already drawn which platforms flood this round. It floods half as many platforms as there are players still in, rounded down and never more than half the platforms.',
+      'Standing on a flooded platform, or not picking, puts you out.',
+      'Last round’s flood is shown. Those platforms can be dry this round: read the water.',
+      'If every player would go under, the round is void and replays.',
+    ],
+    minPlayers: 1,
+    maxPlayers: 1000,
+    maxRounds: 10,
+    roundNoun: 'Tide',
+    winRule: 'Last player standing wins the stage.',
+    tieRule: 'If more than one player is still dry after 10 tides, they share the stage win.',
+  },
 };
 
 export const COLORS = ['red', 'yellow', 'green', 'blue', 'white'] as const;

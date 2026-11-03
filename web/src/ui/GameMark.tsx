@@ -9,6 +9,7 @@ export const GAME_ACCENT: Record<GameId, string> = {
   'suited-up': 'var(--g-suited-up)',
   'pressure-cooker': 'var(--g-pressure-cooker)',
   speedrun: 'var(--g-speedrun)',
+  flood: 'var(--g-flood)',
 };
 
 const CANS = ['var(--can-red)', 'var(--can-yellow)', 'var(--can-green)', 'var(--can-blue)', 'var(--can-white)'];
@@ -87,6 +88,14 @@ export function GameMark({ id, size = 40 }: { id: GameId | null; size?: number }
           <path d="M24 34 34 18" strokeWidth={3.5} />
           <circle cx="24" cy="34" r="3.5" fill={a} />
           <path d="M11 22l3 2M37 22l-3 2M24 14v4" />
+        </svg>
+      );
+    case 'flood':
+      return (
+        <svg {...common} fill="none" stroke={a} strokeWidth={3}>
+          <rect x="9" y="9" width="12" height="12" fill={a} stroke="none" opacity={0.35} />
+          <rect x="27" y="9" width="12" height="12" />
+          <path d="M5 31c3.5-3 6.5-3 10 0s6.5 3 10 0 6.5-3 10 0 5 2.5 8 0M5 39c3.5-3 6.5-3 10 0s6.5 3 10 0 6.5-3 10 0 5 2.5 8 0" />
         </svg>
       );
     case 'speedrun':

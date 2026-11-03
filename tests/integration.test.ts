@@ -84,7 +84,9 @@ describe('final acceptance: complete multiplayer tournament', () => {
   test('sponsor + 3 players, every game, hybrid payout and special awards, lobby → final results', async () => {
     const sponsor = await Client.register(server.url, handle('sponsor'), 'Sponsor');
     const players = await Promise.all(['p1', 'p2', 'p3'].map((p) => Client.register(server.url, handle(p), p.toUpperCase())));
-    const manual = [...GAME_IDS, 'guess-color', 'zero-hour', 'suited-up'] as typeof GAME_IDS[number][];
+    // Every game at least once, padded to the 10-stage minimum.
+    const manual = [...GAME_IDS] as typeof GAME_IDS[number][];
+    for (const g of ['guess-color', 'zero-hour', 'suited-up'] as const) if (manual.length < 10) manual.push(g);
     const cfg = tournamentConfig({
       title: 'Acceptance Run',
       manual,
@@ -131,7 +133,7 @@ describe('final acceptance: complete multiplayer tournament', () => {
 
     const f = finals[0].final!;
     assert.ok(f, 'final results in view');
-    assert.equal(finals[0].results.length, 10);
+    assert.equal(finals[0].results.length, manual.length);
     for (const v of finals) assert.deepEqual(v.final, f, 'everyone gets identical results');
     assert.equal(f.standings.length, 4);
     const committed = totalCommitmentCents(cfg);
@@ -144,7 +146,7 @@ describe('final acceptance: complete multiplayer tournament', () => {
     assert.equal(res.status, 200);
     assert.equal(res.data.tournament.status, 'FINISHED');
     assert.equal(res.data.standings.length, 4);
-    assert.equal(res.data.stages.length, 10);
+    assert.equal(res.data.stages.length, manual.length);
     assert.equal(res.data.allocations.reduce((s: number, a: any) => s + a.amount_cents, 0), committed);
 
     const hist = await players[1].api('GET', '/api/tournaments?scope=mine');

@@ -227,6 +227,11 @@ async function act(p: Page, who: string, game: string, smart: boolean) {
       if (await btn.isVisible().catch(() => false)) await btn.click().catch(() => {});
       return;
     }
+    case 'flood': {
+      const plats = p.getByRole('radiogroup', { name: 'Platforms' }).getByRole('button');
+      await plats.nth(rnd(await plats.count())).click();
+      return p.getByRole('button', { name: /^Stand on platform/ }).click();
+    }
     case 'speedrun': {
       const task = room?.stage?.game?.task;
       const answer = smart && task ? String(task.answer) : 'nope';
