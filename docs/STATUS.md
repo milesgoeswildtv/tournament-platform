@@ -39,7 +39,7 @@ Last updated: 2026-11-03.
 
 All of the above also run in GitHub Actions on every push.
 
-**Production:** the *Verify production* workflow (a full two-player tournament in a phone-sized browser against the live app and API, with fresh QA accounts and real server timers) passed on `ee62760`.
+**Production:** the *Verify production* workflow (a full two-player tournament in a phone-sized browser against the live app and API, with fresh QA accounts and real server timers) passed on `b2730de`, the current design, and on `cdd6441` and `ee62760` before it. The live site serves the same stylesheet (by content hash) that was screenshotted and reviewed.
 
 ## Known defects and limitations
 
