@@ -8,4 +8,4 @@ dist/
 .env
 .dev.vars
 test-results/
-screens/
+/screens/
