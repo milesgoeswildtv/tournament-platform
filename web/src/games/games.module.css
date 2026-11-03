@@ -14,6 +14,10 @@
 .inSpeed { color: var(--g-speedrun); }
 .inAccent { color: var(--accent); }
 
+/* every tappable game object answers the press the same way */
+.can:active:not(:disabled), .suit:active:not(:disabled), .call:active:not(:disabled), .choice:active:not(:disabled), .key:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+.can, .suit, .call, .choice, .key { transition: transform var(--m-fast) var(--ease), opacity var(--m-fast), border-color var(--m-fast), background var(--m-fast); }
+
 /* action area pinned to the bottom of the game */
 .action { display: grid; gap: var(--s-2); padding-top: var(--s-2); }
 .locked {

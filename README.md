@@ -6,6 +6,13 @@ Sponsors put up prizes and configure a tournament of 10–25 **stages**. Each st
 
 > Prize amounts are **sponsor commitments**. The platform records them and calculates who earns them. It does not take deposits, hold money or make payments; every allocation is stored as `COMMITTED_UNPAID`.
 
+## Live
+
+- App: https://tournament-platform-9fd.pages.dev
+- API: https://tournament-platform-api.afterdarklabs.workers.dev (`/api/health`)
+
+Every push to `main` tests, migrates D1 and deploys both. See [docs/STATUS.md](docs/STATUS.md) for test results and known limitations, and [docs/DESIGN.md](docs/DESIGN.md) for the design system.
+
 ## Stack
 
 | Piece | Tech |

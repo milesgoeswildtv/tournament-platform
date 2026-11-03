@@ -65,7 +65,7 @@
 
 .lineup { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 1px; padding: 1px; }
 .slot { display: grid; justify-items: center; gap: 6px; padding: var(--s-2) 4px var(--s-3); background: var(--char); box-shadow: 0 0 0 1px var(--steel); }
-.slotNo { font-family: var(--f-stencil); font-weight: 800; font-size: var(--t-lg); line-height: 1; color: var(--ash); }
+.slotNo { font-family: var(--f-display); font-weight: 800; font-size: var(--t-lg); line-height: 1; color: var(--ash); }
 .slot[data-now='true'] { background: var(--slab-hi); box-shadow: 0 0 0 1px var(--steel), inset 0 -3px 0 var(--sodium); }
 .slot[data-now='true'] .slotNo { color: var(--sodium); }
 .slot[data-done='true'] { opacity: 0.45; }
@@ -155,7 +155,7 @@
   background: radial-gradient(90% 45% at 15% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
 }
 .introStage { display: flex; align-items: flex-end; gap: var(--s-3); }
-.introNo { font-family: var(--f-stencil); font-weight: 800; font-size: clamp(5rem, 30vw, 8rem); line-height: 0.78; color: var(--accent); animation: slam 480ms var(--ease-slam) both; }
+.introNo { font-family: var(--f-display); font-weight: 900; font-size: clamp(5rem, 30vw, 8rem); line-height: 0.78; color: var(--accent); animation: slam 480ms var(--ease-slam) both; }
 .introOf { font-family: var(--f-cond); font-weight: 600; color: var(--dust); padding-bottom: 6px; line-height: 1.2; }
 .introMark { margin-left: auto; padding: var(--s-2); border: 1px solid var(--steel); background: var(--char); }
 .introTitle { display: grid; gap: var(--s-1); }

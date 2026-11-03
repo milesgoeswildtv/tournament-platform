@@ -131,7 +131,7 @@
 .stagePlates { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1px; padding: 1px; }
 .stagePlate { box-shadow: 0 0 0 1px var(--steel); background: var(--char); padding: var(--s-3); display: grid; gap: var(--s-2); align-content: start; }
 .stagePlateHead { display: flex; justify-content: space-between; align-items: center; }
-.stagePlateNo { font-family: var(--f-stencil); font-weight: 800; font-size: var(--t-2xl); line-height: 1; color: var(--ash); }
+.stagePlateNo { font-family: var(--f-display); font-weight: 800; font-size: var(--t-2xl); line-height: 1; color: var(--ash); }
 .stagePlateWin { font-weight: 600; font-size: var(--t-sm); }
 .stagePlateWin[data-me] { color: var(--sodium); }
 .hash { font-family: var(--f-code); font-size: 0.78rem; color: var(--dust); }
@@ -151,7 +151,7 @@
 .logMain { display: grid; gap: 2px; min-width: 0; }
 .logMain b { font-weight: 600; }
 .logMain > span { font-size: var(--t-sm); color: var(--ash); font-variant-numeric: tabular-nums; }
-.logMain summary { cursor: pointer; min-height: 28px; display: flex; align-items: center; }
+.logMain summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
 .logMain summary code { font-family: var(--f-code); font-size: 0.72rem; color: var(--dust); }
 .logMain .payload { min-width: 0; max-width: none; padding: var(--s-2); background: var(--char); border: 1px solid var(--steel); }
 .summary { cursor: pointer; }
@@ -209,7 +209,7 @@
 
 .stageList { display: grid; gap: 1px; background: var(--steel); border: 1px solid var(--steel); }
 .stageItem { display: grid; grid-template-columns: 40px 36px 1fr; align-items: center; gap: var(--s-3); padding: 6px var(--s-3); background: var(--char); }
-.stageNo { font-family: var(--f-stencil); font-weight: 800; font-size: var(--t-xl); color: var(--ash); text-align: right; }
+.stageNo { font-family: var(--f-display); font-weight: 800; font-size: var(--t-xl); color: var(--ash); text-align: right; }
 
 .poolGrid { display: grid; gap: var(--s-2); }
 .poolItem { display: grid; grid-template-columns: 36px 1fr 28px; gap: var(--s-3); align-items: center; min-height: 56px; padding: 0 var(--s-3); border: 1px solid var(--steel); background: var(--char); text-align: left; border-radius: var(--r-ctl); }

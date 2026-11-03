@@ -51,7 +51,7 @@
 .danger:hover:not(:disabled) { --bg: var(--stop-dim); }
 
 .lg { min-height: var(--tap-lg); font-size: var(--t-xl); padding: 0 var(--s-6); }
-.sm { min-height: 36px; font-size: var(--t-md); padding: 0 var(--s-3); }
+.sm { min-height: 44px; font-size: var(--t-md); padding: 0 var(--s-3); } /* still a full touch target */
 .block { display: flex; width: 100%; }
 
 .busy { color: transparent !important; }
@@ -233,4 +233,4 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 
 /* ------------------------------------------------------------ range */
 
-.range { width: 100%; accent-color: var(--sodium); height: 32px; }
+.range { width: 100%; accent-color: var(--sodium); height: 44px; }

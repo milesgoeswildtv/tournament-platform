@@ -39,7 +39,7 @@ Every color, size, duration and texture comes from here. The build fails if a co
 | Face | Role |
 | --- | --- |
 | **Big Shoulders Display** 800–900, caps | poster type: page titles, tournament titles on bills, player names on the scoreboard, game names, big numbers |
-| **Big Shoulders Stencil** 800 | live moments only: the countdown, stage numbers, rubber stamps (OUT / STANDING / VOID / CHAMPION), CASH OUT, the tape mark. Never for a number that must be read precisely at a glance: the room count and ranks use Display, because the stencil 4 breaks apart at large sizes |
+| **Big Shoulders Stencil** 800 | live moments only: the countdown numerals, rubber stamps (OUT / STANDING / VOID / STAGE WIN / CHAMPION), CASH OUT and the tape mark. The countdown is the only place stencil numerals appear, because the falling sequence makes every digit obvious there. Stage numbers, the room count and ranks use Display, because the stencil 4 reads as a glitch on its own |
 | **Barlow** | body and UI text. Inputs are ≥16px so iOS doesn't zoom |
 | **Barlow Condensed** 600/700 | section heads (sentence case), buttons, labels, compact data |
 | **IBM Plex Mono** | invite codes and player IDs only |
@@ -67,7 +67,7 @@ The same poster follows a tournament everywhere it's presented to players, so it
 ## The floor
 
 - **Countdown:** hazard tape top and bottom, one work light sweeping, the stencil number slamming each second, and the first game on a plate.
-- **Stage intro:** the game's title card. The stage number is stencilled in the game's accent, and its light glows from the top-left. It compacts on phones under 740px tall, so the rules and the timer fit on one screen.
+- **Stage intro:** the game's title card. The stage number is set huge in the game's accent, and its light glows from the top-left. It compacts on phones under 740px tall, so the rules and the timer fit on one screen.
 - **Round:** the stage bar (round, standing count, server timer, who's locked in), then the game's board, which fills the rest of the screen. Nothing scrolls.
 - **Reveal:** the rubber stamp lands (OUT / STANDING / VOID) and the room's light turns red or green (`body[data-light]`), then the game's own reveal plays.
 - **Stage result and final:** the winner's name slams in, a Stage Win or Champion stamp, and the Scoreboard.

@@ -15,9 +15,14 @@ Last updated: 2026-11-03.
 - **Audit:** append-only `tournament_events` (gapless sequence), submissions with server receive times, eliminations with reasons, disconnects and reconnects, config history, and stage results. Database triggers refuse UPDATE/DELETE. There's an audit page for the sponsor and an admin page for everything.
 - **Fair play:** server-side validation of every action, duplicate/late/stale rejection, rate limits (D1 for HTTP, a token bucket for WebSockets), invite-use accounting that returns a use when a join is refused, sponsor-only controls, and the player cap enforced inside the room.
 - **Telegram:** `initData` HMAC validation, Mini App sign-in and account linking, bot webhook (`/start [code]`, `/join CODE`, `/help`), notifications for countdown and final results, and the setup script.
-- **Design system and every screen**, mobile-first with desktop supported; see [DESIGN.md](DESIGN.md). Generated music and sound effects, plus haptics.
-- **CI/CD workflow:** tests, then D1 migrations, Worker + Durable Object, Pages, Telegram and a smoke test.
-- **Created in Cloudflare:** D1 database `tournament-platform` (`313336d1-b81f-4eb3-9aef-cc99cd32fc02`, ENAM).
+- **Visual identity: the venue** ([DESIGN.md](DESIGN.md)). Four materials (concrete, steel, paper, tape) and a fight-night **bill** for every tournament: on the invite, the lobby, the wizard's review step and the results page. The lobby is a live event: the bill, a players-in count that slams on each arrival, name plates with connection lamps, and a tear-off invite ticket. Each game has its own light and object (paint stripes, a split-flap counter, a ticket, letter tiles, dealer cards, a gauge, a task card). Final standings are a scoreboard with the prize inline. The app icon is the tape mark, rendered from the real fonts.
+- **Design-system guard in the build:** undefined CSS-module classes, inline style objects and raw colors outside tokens fail `build:web` (and so CI). There are zero inline style objects in the app.
+- Mobile-first with desktop supported. Generated music and sound effects, plus haptics.
+- **CI/CD workflow:** tests, then D1 migrations, Worker + Durable Object, Pages, Telegram and a smoke test. Commits tagged `[verify-prod]` then play a full two-player tournament in a phone-sized browser against the live deployment.
+- **Deployed on Cloudflare** (deploys from `main` on every push):
+  - App (Pages): https://tournament-platform-9fd.pages.dev
+  - API (Worker + Durable Object): https://tournament-platform-api.afterdarklabs.workers.dev (`/api/health` reports `telegram: true`)
+  - D1 database `tournament-platform` (`313336d1-b81f-4eb3-9aef-cc99cd32fc02`, ENAM)
 
 ## Test results (local)
 
@@ -25,17 +30,21 @@ Last updated: 2026-11-03.
 | --- | --- |
 | `test:unit`: games, ties, payouts, config, lineups, room state machine, timers, late entry, permissions, duplicates, reconnection state, DO restart, Telegram `initData` | **71 / 71 pass** |
 | `test:integration` (18 tests): real Worker + Durable Object over HTTP and WebSocket. Covers accounts, the complete 4-player acceptance tournament (every game, hybrid payout, special awards), invite limits, expiry and regeneration, public/private, player cap, config versioning and locking, abort and cancel, sponsor disconnect, DO restart mid-run, duplicate/late/stale submissions, disconnect without stalling the round, reconnect, late entry and cutoff, all 7 games with 6 simultaneous players, and rate limits, Telegram sign-in + linking + webhook secret | **18 / 18 pass** |
-| `test:ui`: Chromium at 390×844 and 375×667. Sponsor signs up and builds the tournament in the wizard; a second player joins from the invite link; both see the same list and countdown; both play all 10 stages by tapping; final standings and prizes; results, audit, history and leaderboard. No console errors and no horizontal overflow | **pass** |
+| `test:ui`: Chromium at 390×844, 375×667 and 1280×860. Sponsor signs up and builds the tournament in the wizard; a second player joins from the invite link; both see the same list and countdown; both play all 10 stages by tapping; both devices show the same final standings (rank by rank) and prizes; results, audit, history and leaderboard. No console errors and no horizontal overflow | **pass** |
 | `test:telegram-ui`: the Mini App opened the way Telegram opens it (signed `initData` in the URL hash, an invite as the start parameter) → server-validated sign-in → deep link → join | **pass** |
 | Web bundle secret check (no Decode answers or Speedrun tasks in client JS) | **pass** |
+| Design-system guard (`check:design`): 36 components, every module class defined, no inline style objects, colors from tokens | **pass** |
+| Visual review: every screen and every game phase screenshotted at 375×667, 390×844 and 1280×860 and reviewed; static screens also at 430×932 (`npm run shots`) | **done** |
 | Typecheck: engine + worker, and web against the real `@types/react` (CI) | **pass** |
 
 All of the above also run in GitHub Actions on every push.
 
+**Production:** the *Verify production* workflow (a full two-player tournament in a phone-sized browser against the live app and API, with fresh QA accounts and real server timers) passed on `ee62760`.
+
 ## Known defects and limitations
 
-- **Not yet run on real Cloudflare.** The Worker and Durable Object were exercised on a faithful Node stand-in (`dev/runtime.ts`) because the Cloudflare API was blocked from the build environment. The first CI deploy is the first run on workerd.
-- **Telegram has never been tested against live Telegram** (no bot token yet). Validation is covered by unit tests with independently signed payloads.
+- **The Mini App hasn't been opened from inside the real Telegram app during the build.** The bot token is configured on the live API, and validation is covered by unit tests with independently signed payloads plus a browser test that opens the app the way Telegram does.
+- Players get a bill, tags and a scoreboard sized for up to about 60 visible names; a 200-player lobby scrolls the tag grid (by design) and hides the in-round field dots above 60.
 - Prize amounts are **commitments only**, by design. There is no payment processing.
 - No password reset or email. Accounts are username + password, or Telegram.
 - There's no scheduled start time. Sponsors start manually.
@@ -44,11 +53,13 @@ All of the above also run in GitHub Actions on every push.
 
 ## Blockers / required owner actions
 
-1. **Add GitHub repo secrets** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; README › Deployment lists the token permissions. Then run *Actions → CI / Deploy → Run workflow*. Deployment is blocked until then.
-2. **Optional:** create a bot with @BotFather and add `TELEGRAM_BOT_TOKEN`, then re-run the workflow.
-3. **Optional:** set `ADMIN_HANDLES` in `wrangler.jsonc` to your username before registering, to get the admin page.
+None are blocking. Cloudflare and Telegram secrets are in place, and deploys run from `main`.
+
+1. **Recommended:** open the bot in Telegram on your phone, tap the Mini App button and play a short tournament with a second account, to confirm the in-Telegram experience end to end.
+2. **Optional:** set `ADMIN_HANDLES` in `wrangler.jsonc` to your username to get the admin page.
+3. **Optional:** add the app to your iPhone home screen (Share → Add to Home Screen). It opens standalone with the NAME TBD tape icon.
 
 ## Unfinished / next
 
-- Verify the deployed app end to end on a phone once secrets are in place. CI smoke-tests the health endpoint, the page and CORS.
 - A wider Speedrun task library, and more Decode puzzles (currently a controlled MVP set).
+- A permanent product name: the tape mark is the placeholder. Swapping the name means replacing `TapeMark` and re-running `npm run icons`.
