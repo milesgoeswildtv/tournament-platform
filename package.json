@@ -7,18 +7,19 @@
   "scripts": {
     "dev:api": "wrangler dev --local --persist-to .wrangler/state",
     "dev:web": "vite --config web/vite.config.ts",
-    "dev:local": "node --experimental-sqlite --import tsx dev/server.ts",
+    "dev:local": "node --experimental-sqlite --no-warnings --import tsx dev/server.ts",
     "build:web": "vite build --config web/vite.config.ts",
     "build:web:esbuild": "node scripts/build-web.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
-    "test": "node --experimental-sqlite --import tsx --test tests/*.test.ts",
-    "test:e2e": "node --experimental-sqlite --import tsx scripts/e2e-ws.ts",
-    "test:ui": "node --experimental-sqlite --import tsx scripts/e2e-ui.ts",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-ui.ts",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "deploy:api": "wrangler deploy",
     "deploy:web": "npm run build:web && wrangler pages deploy web/dist --project-name tournament-platform --cwd web",
-    "telegram:setup": "node scripts/telegram-setup.mjs"
+    "telegram:setup": "node scripts/telegram-setup.mjs",
+    "test:unit": "node --experimental-sqlite --no-warnings --import tsx --test tests/games.test.ts tests/results.test.ts tests/room.test.ts",
+    "test:integration": "node --experimental-sqlite --no-warnings --import tsx --test --test-concurrency=1 tests/integration.test.ts"
   },
   "dependencies": {
     "react": "^19.2.0",

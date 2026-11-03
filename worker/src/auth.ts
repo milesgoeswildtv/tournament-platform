@@ -90,7 +90,8 @@ function displayName(v: unknown): string {
 }
 
 export async function register(c: RouteCtx): Promise<Response> {
-  await rateLimit(c.env, `register:${clientIp(c.req)}`, 10, 3600);
+  // Generous per-IP cap: venues and mobile carriers put many players behind one address.
+  await rateLimit(c.env, `register:${clientIp(c.req)}`, 40, 3600);
   const body = await readJson(c.req);
   const handle = str(body.handle, 'Username', 3, 20).toLowerCase();
   if (!HANDLE_RE.test(handle)) throw new HttpError(400, 'invalid_input', 'Username: 3–20 letters, numbers or underscores', { field: 'handle' });
@@ -115,7 +116,7 @@ export async function register(c: RouteCtx): Promise<Response> {
 
 export async function login(c: RouteCtx): Promise<Response> {
   const ip = clientIp(c.req);
-  await rateLimit(c.env, `login:${ip}`, 20, 600);
+  await rateLimit(c.env, `login:${ip}`, 60, 600);
   const body = await readJson(c.req);
   const handle = typeof body.handle === 'string' ? body.handle.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';

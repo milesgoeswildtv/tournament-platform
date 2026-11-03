@@ -46,7 +46,11 @@ export interface StageOutcome {
   summary: string;
 }
 
-export type ActResult<S> = { ok: true; state: S; reply?: unknown } | { ok: false; error: string };
+/**
+ * `partial` marks an accepted action that does not finish the player's turn
+ * (High/Low's reroll): it is logged, but the player still shows as undecided.
+ */
+export type ActResult<S> = { ok: true; state: S; reply?: unknown; partial?: boolean } | { ok: false; error: string };
 
 export interface GameMeta {
   id: GameId;

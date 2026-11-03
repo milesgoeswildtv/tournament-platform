@@ -57,7 +57,7 @@ export const highLow: GameDefinition<S> = {
     if (a?.type === 'reroll') {
       if (hand.rerolled) return { ok: false, error: 'already_rerolled' };
       const n = ctx.rng.int(1, 100);
-      return { ok: true, state: { ...s, hands: { ...s.hands, [playerId]: { ...hand, final: n, rerolled: true } } }, reply: { number: n } };
+      return { ok: true, state: { ...s, hands: { ...s.hands, [playerId]: { ...hand, final: n, rerolled: true } } }, reply: { number: n }, partial: true };
     }
     if (a?.type === 'call' && (a.side === 'high' || a.side === 'low')) {
       return { ok: true, state: { ...s, hands: { ...s.hands, [playerId]: { ...hand, call: a.side, at: ctx.now } } } };

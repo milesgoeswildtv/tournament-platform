@@ -331,8 +331,8 @@ export class RoomCore {
     const r = game.act(st.game, userId, msg.action, this.ctx(now));
     if (!r.ok) return reject(r.error);
     st.game = r.state;
-    st.submitted[userId] ??= now;
-    this.emit('SUBMISSION', now, { stage: st.index, round: st.game.round, playerId: userId, action: msg.action ?? null, accepted: true }, userId);
+    if (!r.partial) st.submitted[userId] ??= now;
+    this.emit('SUBMISSION', now, { stage: st.index, round: st.game.round, playerId: userId, action: msg.action ?? null, accepted: true, final: !r.partial }, userId);
     if (r.reply !== undefined) this.replies.push({ playerId: userId, data: r.reply });
     if (game.roundReady(st.game)) this.resolveRound(now);
     return { ok: true, reply: r.reply };
