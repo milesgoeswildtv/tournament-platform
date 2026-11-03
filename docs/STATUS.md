@@ -26,16 +26,18 @@ Last updated: 2026-11-03.
 | `test:unit`: games, ties, payouts, config, lineups, room state machine, timers, late entry, permissions, duplicates, reconnection state, DO restart, Telegram `initData` | **71 / 71 pass** |
 | `test:integration` (18 tests): real Worker + Durable Object over HTTP and WebSocket. Covers accounts, the complete 4-player acceptance tournament (every game, hybrid payout, special awards), invite limits, expiry and regeneration, public/private, player cap, config versioning and locking, abort and cancel, sponsor disconnect, DO restart mid-run, duplicate/late/stale submissions, disconnect without stalling the round, reconnect, late entry and cutoff, all 7 games with 6 simultaneous players, and rate limits, Telegram sign-in + linking + webhook secret | **18 / 18 pass** |
 | `test:ui`: Chromium at 390×844 and 375×667. Sponsor signs up and builds the tournament in the wizard; a second player joins from the invite link; both see the same list and countdown; both play all 10 stages by tapping; final standings and prizes; results, audit, history and leaderboard. No console errors and no horizontal overflow | **pass** |
+| `test:telegram-ui`: the Mini App opened the way Telegram opens it (signed `initData` in the URL hash, an invite as the start parameter) → server-validated sign-in → deep link → join | **pass** |
 | Web bundle secret check (no Decode answers or Speedrun tasks in client JS) | **pass** |
+| Typecheck: engine + worker, and web against the real `@types/react` (CI) | **pass** |
+
+All of the above also run in GitHub Actions on every push.
 
 ## Known defects and limitations
 
-- The **web typecheck** was verified locally only against a minimal React type shim, because the npm registry was unreachable from the build environment. CI checks against the real `@types/react`, so the first run may surface type-only errors. They don't affect the build: esbuild strips types.
 - **Not yet run on real Cloudflare.** The Worker and Durable Object were exercised on a faithful Node stand-in (`dev/runtime.ts`) because the Cloudflare API was blocked from the build environment. The first CI deploy is the first run on workerd.
 - **Telegram has never been tested against live Telegram** (no bot token yet). Validation is covered by unit tests with independently signed payloads.
 - Prize amounts are **commitments only**, by design. There is no payment processing.
 - No password reset or email. Accounts are username + password, or Telegram.
-- The lobby on desktop is a single centered column. It works, but doesn't use the extra width.
 - There's no scheduled start time. Sponsors start manually.
 - The HTTP rate limiter uses fixed windows in D1. That's adequate for MVP traffic, but it isn't a global token bucket.
 - On iOS, the ring/silent switch mutes WebAudio, so music and effects are silent in silent mode.
@@ -50,4 +52,3 @@ Last updated: 2026-11-03.
 
 - Verify the deployed app end to end on a phone once secrets are in place. CI smoke-tests the health endpoint, the page and CORS.
 - A wider Speedrun task library, and more Decode puzzles (currently a controlled MVP set).
-- A two-column desktop lobby with inline chat.
