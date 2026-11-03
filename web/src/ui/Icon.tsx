@@ -36,6 +36,7 @@ const PATHS: Record<string, string> = {
   eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
   up: 'M12 20V5M5 11l7-7 7 7',
   down: 'M12 4v15M5 13l7 7 7-7',
+  hatch: 'M5 5h14v14H5zM5 12h14M12 5v14M8.5 8.5l7 7',
   shuffle: 'M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3',
   wifi: 'M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0M12 19.5v.01',
 };

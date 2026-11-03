@@ -227,6 +227,11 @@ async function act(p: Page, who: string, game: string, smart: boolean) {
       if (await btn.isVisible().catch(() => false)) await btn.click().catch(() => {});
       return;
     }
+    case 'wrong-way': {
+      const doors = p.getByRole('radiogroup', { name: 'Routes' }).getByRole('button');
+      await doors.nth(rnd(await doors.count())).click();
+      return p.getByRole('button', { name: /^Go / }).click();
+    }
     case 'flood': {
       const plats = p.getByRole('radiogroup', { name: 'Platforms' }).getByRole('button');
       await plats.nth(rnd(await plats.count())).click();

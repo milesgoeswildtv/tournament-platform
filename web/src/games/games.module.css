@@ -14,6 +14,7 @@
 .inSpeed { color: var(--g-speedrun); }
 .inAccent { color: var(--accent); }
 .inFlood { color: var(--g-flood); }
+.inWay { color: var(--g-wrong-way); }
 
 /* every tappable game object answers the press the same way */
 .can:active:not(:disabled), .suit:active:not(:disabled), .call:active:not(:disabled), .choice:active:not(:disabled), .key:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
@@ -353,6 +354,70 @@
 .platform[data-mine] { border: 2px solid var(--chalk); }
 .occupancy { position: relative; font-family: var(--f-cond); font-weight: 700; font-size: var(--t-xs); color: var(--dust); }
 .platform[data-wet] .occupancy { color: var(--chalk); }
+
+/* ------------------------------------------------------------ wrong way: a junction seen from above */
+
+.wayHint { display: grid; justify-items: center; gap: 2px; text-align: center; font-family: var(--f-cond); font-weight: 600; font-size: var(--t-lg); color: var(--dust); line-height: 1.2; }
+.wayHint b { font-family: var(--f-display); font-weight: 800; font-size: var(--t-2xl); color: var(--g-wrong-way); }
+.wayLine { display: block; }
+.wayField { font-size: var(--t-sm); color: var(--ash); }
+.wayFrame {
+  flex: 1;
+  min-height: 0;
+  max-height: 420px;
+  display: grid;
+  padding: 8px;
+  /* corridor floor and walls */
+  background:
+    linear-gradient(90deg, transparent 33%, rgba(0, 0, 0, 0.35) 33% 34%, transparent 34% 66%, rgba(0, 0, 0, 0.35) 66% 67%, transparent 67%),
+    var(--grain),
+    var(--char);
+  border: 1px solid var(--steel);
+}
+.junction {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-areas: '. up .' 'left hub right' '. down .';
+  gap: 6px;
+  min-height: 0;
+}
+.junction[data-routes='5'] { grid-template-areas: '. up .' 'left through right' '. down .'; }
+.junctionSlot { display: grid; min-height: 0; }
+.junctionSlot[data-route='left'] { grid-area: left; }
+.junctionSlot[data-route='up'] { grid-area: up; }
+.junctionSlot[data-route='right'] { grid-area: right; }
+.junctionSlot[data-route='down'] { grid-area: down; }
+.junctionSlot[data-route='through'] { grid-area: through; }
+.junctionHub { grid-area: hub; display: grid; place-items: center; }
+.junctionHub span { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; border: 2px dashed var(--grit); font-family: var(--f-cond); font-weight: 700; color: var(--ash); }
+.door {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 56px;
+  border: 1px solid var(--grit);
+  border-top: 3px solid var(--g-wrong-way);
+  background: linear-gradient(180deg, var(--slab-hi), var(--slab));
+  box-shadow: var(--edge);
+  color: var(--chalk);
+  font-family: var(--f-cond);
+  font-weight: 700;
+  font-size: var(--t-md);
+  touch-action: manipulation;
+  transition: transform var(--m-fast) var(--ease), filter var(--m-fast), border-color var(--m-fast);
+}
+.door:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+.junctionSlot[data-route='through'] .door { border-radius: 50%; border: 2px solid var(--g-wrong-way); background: radial-gradient(circle, var(--void) 30%, var(--slab) 72%); }
+.door[aria-pressed='true'] { border-color: var(--chalk); border-top-color: var(--chalk); background: linear-gradient(180deg, var(--steel), var(--slab-hi)); }
+.wayFrame[data-chosen='true'] .door[aria-pressed='false'] { filter: brightness(0.45); }
+.wayReveal { flex: none; max-height: 260px; }
+.wayReveal .door { min-height: 60px; gap: 0; }
+.wayReveal .door b { font-family: var(--f-display); font-weight: 800; font-size: var(--t-xl); line-height: 1; }
+.door[data-safe] { border-color: var(--go-dim); border-top-color: var(--go); color: var(--go); }
+.door[data-dead] { border-color: var(--stop-dim); border-top-color: var(--stop); color: var(--stop); background: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(238, 75, 59, 0.08) 8px 10px), var(--char); }
+.door[data-mine] { outline: 2px solid var(--chalk); outline-offset: 2px; }
 
 /* ------------------------------------------------------------ reveal blocks */
 

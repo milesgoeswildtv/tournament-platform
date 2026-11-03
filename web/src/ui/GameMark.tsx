@@ -10,6 +10,7 @@ export const GAME_ACCENT: Record<GameId, string> = {
   'pressure-cooker': 'var(--g-pressure-cooker)',
   speedrun: 'var(--g-speedrun)',
   flood: 'var(--g-flood)',
+  'wrong-way': 'var(--g-wrong-way)',
 };
 
 const CANS = ['var(--can-red)', 'var(--can-yellow)', 'var(--can-green)', 'var(--can-blue)', 'var(--can-white)'];
@@ -96,6 +97,13 @@ export function GameMark({ id, size = 40 }: { id: GameId | null; size?: number }
           <rect x="9" y="9" width="12" height="12" fill={a} stroke="none" opacity={0.35} />
           <rect x="27" y="9" width="12" height="12" />
           <path d="M5 31c3.5-3 6.5-3 10 0s6.5 3 10 0 6.5-3 10 0 5 2.5 8 0M5 39c3.5-3 6.5-3 10 0s6.5 3 10 0 6.5-3 10 0 5 2.5 8 0" />
+        </svg>
+      );
+    case 'wrong-way':
+      return (
+        <svg {...common} fill="none" stroke={a} strokeWidth={3} strokeLinecap="square">
+          <path d="M6 6h14v10M28 6h14v36H28M6 24h10v18M20 30h-4" opacity={0.55} />
+          <path d="M24 42V20h10M30 15l5 5-5 5" />
         </svg>
       );
     case 'speedrun':

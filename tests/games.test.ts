@@ -394,3 +394,72 @@ describe('The Flood', () => {
     assert.equal(o.ranking[0], 'a');
   });
 });
+
+describe('Wrong Way', () => {
+  test('route count and safe count follow the share of the starting field', async () => {
+    const { wrongWayShape } = await import('../shared/src/games/wrongWay');
+    assert.deepEqual(wrongWayShape(20, 20), { routes: 4, safe: 3 });
+    assert.deepEqual(wrongWayShape(11, 20), { routes: 4, safe: 3 });
+    assert.deepEqual(wrongWayShape(10, 20), { routes: 4, safe: 2 }, 'exactly 50%');
+    assert.deepEqual(wrongWayShape(6, 20), { routes: 4, safe: 2 });
+    assert.deepEqual(wrongWayShape(5, 20), { routes: 4, safe: 1 }, 'exactly 25%');
+    assert.deepEqual(wrongWayShape(3, 20), { routes: 4, safe: 1 });
+    assert.deepEqual(wrongWayShape(2, 20), { routes: 5, safe: 1 }, 'exactly 10%');
+    assert.deepEqual(wrongWayShape(1, 100), { routes: 5, safe: 1 });
+    assert.deepEqual(wrongWayShape(2, 2), { routes: 4, safe: 3 });
+  });
+  test('safe routes are fixed at the opening, hidden, and never respond to picks', () => {
+    const g = getGame('wrong-way');
+    const rng = seededRng(21);
+    let s: any = g.init(['a', 'b', 'c', 'd'], ctx(rng));
+    s = g.startRound(s, { startedAt: 0, endsAt: 10 }, ctx(rng));
+    const before = s.safe.slice();
+    assert.equal(before.length, 3);
+    assert.ok(!JSON.stringify(g.publicView(s)).includes('"safe"'), 'safe routes are not public');
+    for (const p of ['a', 'b', 'c', 'd']) s = (g.act(s, p, { route: 'left' }, ctx(rng)) as any).state;
+    assert.deepEqual(s.safe, before, 'picks never change the safe routes');
+    assert.deepEqual(g.act(s, 'a', { route: 'up' }, ctx(rng)), { ok: false, error: 'already_submitted' });
+    assert.deepEqual(g.act(g.startRound(s, { startedAt: 20, endsAt: 30 }, ctx(rng)), 'a', { route: 'through' }, ctx(rng)), { ok: false, error: 'invalid_route' }, 'no fifth route before the endgame');
+  });
+  test('dead ends and missing picks are out; everyone dead → void; endgame opens five routes', () => {
+    const g = getGame('wrong-way');
+    const rng = seededRng(4);
+    const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    let s: any = g.init(ids, ctx(rng));
+    s = { ...g.startRound(s, { startedAt: 0, endsAt: 10 }, ctx(rng)), safe: ['left', 'up', 'right'] };
+    for (const p of ids.slice(0, 8)) s = (g.act(s, p, { route: 'left' }, ctx(rng)) as any).state;
+    s = (g.act(s, 'p8', { route: 'down' }, ctx(rng)) as any).state;
+    let r = g.resolveRound(s, ctx(rng));
+    assert.equal(r.state.alive.length, 8);
+    assert.deepEqual(Object.fromEntries(r.result.eliminated.map((e) => [e.playerId, e.reason])), { p8: 'Dead end DOWN', p9: 'Didn’t pick a route' });
+    // everyone wrong → void
+    s = { ...g.startRound(r.state, { startedAt: 20, endsAt: 30 }, ctx(rng)), safe: ['up'] };
+    for (const p of r.state.alive) s = (g.act(s, p, { route: 'left' }, ctx(rng)) as any).state;
+    r = g.resolveRound(s, ctx(rng));
+    assert.equal(r.result.voided, true);
+    assert.equal(r.state.alive.length, 8);
+    // drop to 1 of 10 → five routes
+    s = { ...g.startRound(r.state, { startedAt: 40, endsAt: 50 }, ctx(rng)), safe: ['up'] };
+    s = (g.act(s, 'p0', { route: 'up' }, ctx(rng)) as any).state;
+    r = g.resolveRound(s, ctx(rng));
+    assert.deepEqual(r.state.alive, ['p0']);
+    assert.equal(r.state.done, true);
+    assert.deepEqual(g.outcome(r.state).winners, ['p0']);
+    const end = g.startRound({ ...r.state, alive: ['p0'], done: false }, { startedAt: 60, endsAt: 70 }, ctx(rng)) as any;
+    assert.equal(end.routes, 5);
+    assert.equal(end.safe.length, 1);
+  });
+  test('the junction cap ends the stage with a shared win', () => {
+    const g = getGame('wrong-way');
+    const rng = seededRng(8);
+    let s: any = g.init(['a', 'b'], ctx(rng));
+    for (let i = 0; i < 12; i++) {
+      s = { ...g.startRound(s, { startedAt: i * 10, endsAt: i * 10 + 9 }, ctx(rng)), safe: ['left', 'up', 'right'] };
+      s = (g.act(s, 'a', { route: 'left' }, ctx(rng)) as any).state;
+      s = (g.act(s, 'b', { route: 'up' }, ctx(rng)) as any).state;
+      s = g.resolveRound(s, ctx(rng)).state;
+    }
+    assert.equal(s.done, true);
+    assert.deepEqual(g.outcome(s).winners.sort(), ['a', 'b']);
+  });
+});

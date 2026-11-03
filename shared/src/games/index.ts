@@ -8,6 +8,7 @@ import { suitedUp } from './suitedUp';
 import { pressureCooker } from './pressureCooker';
 import { speedrun } from './speedrun';
 import { flood } from './flood';
+import { wrongWay } from './wrongWay';
 
 /**
  * The only place the engine learns which games exist. To add a game, implement
@@ -22,6 +23,7 @@ export const GAMES: Record<GameId, GameDefinition<BaseState>> = {
   'pressure-cooker': pressureCooker as unknown as GameDefinition<BaseState>,
   speedrun: speedrun as unknown as GameDefinition<BaseState>,
   flood: flood as unknown as GameDefinition<BaseState>,
+  'wrong-way': wrongWay as unknown as GameDefinition<BaseState>,
 };
 
 export function getGame(id: GameId): GameDefinition<BaseState> {

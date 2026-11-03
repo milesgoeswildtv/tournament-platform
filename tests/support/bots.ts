@@ -61,6 +61,8 @@ export function autoplay(c: Client, opts: BotOptions = {}): () => void {
           return act(v, { suit: SUITS[rnd(0, 3)] });
         case 'pressure-cooker':
           return act(v, { type: 'cashout' });
+        case 'wrong-way':
+          return act(v, { route: ['left', 'up', 'right', 'down', 'through'][rnd(0, ((cur.stage.public as any)?.routes ?? 4) - 1)] });
         case 'flood':
           return act(v, { platform: rnd(0, Math.max(0, ((cur.stage.public as any)?.platforms ?? 1) - 1)) });
         case 'speedrun': {

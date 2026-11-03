@@ -151,6 +151,25 @@ export const GAME_META_DATA: Record<GameId, GameMeta> = {
     winRule: 'Last player standing wins the stage.',
     tieRule: 'If more than one player is still dry after 10 tides, they share the stage win.',
   },
+  'wrong-way': {
+    id: 'wrong-way',
+    name: 'Wrong Way',
+    tagline: 'Every junction, fewer ways out.',
+    description: 'A maze of junctions. Pick a route at each one; dead ends put you out. The thinner the field gets, the fewer routes are safe.',
+    instructions: [
+      'Each junction has four routes. Pick one before the timer runs out.',
+      'The safe routes are fixed by the server when the junction opens. Nobody’s choice moves them.',
+      'Three routes are safe at first. Once half the starting field is gone, two are. At a quarter, one.',
+      'At a tenth of the starting field, the junction opens a fifth route, and only one of the five is safe.',
+      'A dead end, or no pick, puts you out. If everyone hits a dead end, the junction is void and replays.',
+    ],
+    minPlayers: 1,
+    maxPlayers: 1000,
+    maxRounds: 12,
+    roundNoun: 'Junction',
+    winRule: 'Last player standing wins the stage.',
+    tieRule: 'If more than one player is still in after 12 junctions, they share the stage win.',
+  },
 };
 
 export const COLORS = ['red', 'yellow', 'green', 'blue', 'white'] as const;
