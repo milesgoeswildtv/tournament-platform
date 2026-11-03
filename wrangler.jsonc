@@ -1,0 +1,43 @@
+{
+  // API worker: HTTP API, websockets and the TournamentRoom Durable Object.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tournament-platform-api",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "observability": { "enabled": true },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "APP_URL": "https://tournament-platform.pages.dev",
+    "ALLOWED_ORIGINS": "",
+    "ADMIN_HANDLES": ""
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tournament-platform",
+      "database_id": "313336d1-b81f-4eb3-9aef-cc99cd32fc02",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "TournamentRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TournamentRoom"] }],
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "development",
+        "APP_URL": "http://localhost:5173",
+        "ALLOWED_ORIGINS": "http://localhost:5173,http://127.0.0.1:5173",
+        "DEV_TIME_SCALE": "1",
+        "ADMIN_HANDLES": ""
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "tournament-platform-dev", "database_id": "local", "migrations_dir": "migrations" }
+      ],
+      "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "TournamentRoom" }] }
+    }
+  }
+  // Secrets (wrangler secret put …): TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET.
+  // Plain vars you may add: TELEGRAM_BOT_USERNAME, TELEGRAM_MINIAPP_SHORTNAME.
+}

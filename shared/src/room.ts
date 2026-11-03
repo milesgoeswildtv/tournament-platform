@@ -229,7 +229,7 @@ export class RoomCore {
     return { ok: true, eligibleFrom, already: false };
   }
 
-  join(user: UserRef, now: number): Result<{ eligibleFrom: number; already: boolean }> {
+  join(user: UserRef, now: number, via: string | null = null): Result<{ eligibleFrom: number; already: boolean }> {
     const check = this.canJoin(user.id);
     if (!check.ok || check.already) return check;
     const late = this.isRunning;
@@ -243,7 +243,7 @@ export class RoomCore {
       left: false,
       connected: this.s.players[user.id]?.connected ?? false,
     };
-    this.emit('PLAYER_JOINED', now, { playerId: user.id, name: user.name, eligibleFrom: check.eligibleFrom, late }, user.id);
+    this.emit('PLAYER_JOINED', now, { playerId: user.id, name: user.name, eligibleFrom: check.eligibleFrom, late, via }, user.id);
     this.system(late ? `${user.name} entered late — eligible from stage ${check.eligibleFrom}.` : `${user.name} joined.`, now);
     return { ok: true, eligibleFrom: check.eligibleFrom, already: false };
   }
