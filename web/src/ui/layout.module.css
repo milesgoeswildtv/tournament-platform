@@ -24,6 +24,8 @@
 .lede { color: var(--dust); max-width: 60ch; }
 
 .section { display: grid; gap: var(--s-3); }
+/* Section heads are quiet on purpose: poster caps are saved for titles,
+   names and live moments, so they still hit when they appear. */
 .sectionHead {
   display: flex;
   align-items: baseline;
@@ -33,13 +35,36 @@
   border-bottom: 1px solid var(--steel);
 }
 .sectionTitle {
-  font-family: var(--f-display);
+  font-family: var(--f-cond);
   font-weight: 700;
   font-size: var(--t-xl);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  line-height: 1.1;
+  letter-spacing: 0.005em;
 }
-.sectionAside { font-family: var(--f-cond); font-weight: 600; color: var(--ash); font-size: var(--t-md); }
+.sectionAside { font-family: var(--f-cond); font-weight: 600; color: var(--ash); font-size: var(--t-md); white-space: nowrap; }
+.sectionAside a { color: var(--dust); }
+
+/* ------------------------------------------------------------ text + stack primitives */
+
+.stack { display: grid; align-content: start; min-width: 0; }
+.g1 { gap: var(--s-1); } .g2 { gap: var(--s-2); } .g3 { gap: var(--s-3); } .g4 { gap: var(--s-4); } .g6 { gap: var(--s-6); } .g8 { gap: var(--s-8); }
+.stackRow { display: flex; flex-wrap: wrap; align-items: center; }
+.stackPush { margin-top: auto; }
+.stackCenter { justify-items: center; text-align: center; }
+
+.text { margin: 0; overflow-wrap: anywhere; }
+.t_xs { font-size: var(--t-xs); } .t_sm { font-size: var(--t-sm); } .t_md { font-size: var(--t-md); } .t_lg { font-size: var(--t-lg); line-height: 1.35; }
+.c_chalk { color: var(--chalk); } .c_dust { color: var(--dust); } .c_ash { color: var(--ash); }
+.c_sodium { color: var(--sodium); } .c_fluoro { color: var(--fluoro); } .c_go { color: var(--go); } .c_stop { color: var(--stop); }
+.text b, .text strong { color: var(--chalk); font-weight: 600; }
+.cond { font-family: var(--f-cond); font-weight: 600; }
+.center { text-align: center; }
+
+/* ------------------------------------------------------------ status screen (gates, closed rooms) */
+
+.status { min-height: 70dvh; padding: calc(var(--safe-top) + var(--s-12)) var(--gutter) var(--s-10); max-width: 520px; margin: 0 auto; display: grid; gap: var(--s-4); align-content: center; }
+.statusTitle { font-family: var(--f-display); font-weight: 900; font-size: clamp(2.4rem, 11vw, 3.4rem); line-height: 0.9; text-transform: uppercase; overflow-wrap: anywhere; }
+.statusActions { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
 
 /* ------------------------------------------------------------ plate (panel) */
 
@@ -111,14 +136,14 @@ a.row:hover { background: linear-gradient(90deg, transparent, rgba(255, 255, 255
 
 /* ------------------------------------------------------------ stats */
 
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); border-top: 1px solid var(--steel); border-left: 1px solid var(--steel); }
-.stat { padding: var(--s-3) var(--s-3) var(--s-4); border-right: 1px solid var(--steel); border-bottom: 1px solid var(--steel); display: grid; gap: 4px; align-content: start; }
-.statValue { font-family: var(--f-display); font-weight: 800; font-size: var(--t-3xl); line-height: 1; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--steel); border: 1px solid var(--steel); }
+.stat { padding: var(--s-3) var(--s-3) var(--s-4); background: var(--char); display: grid; gap: 4px; align-content: start; min-width: 0; }
+.statValue { font-family: var(--f-display); font-weight: 800; font-size: var(--t-3xl); line-height: 1; overflow-wrap: anywhere; }
 .statLabel { font-family: var(--f-cond); font-weight: 600; font-size: var(--t-sm); color: var(--ash); }
 
 /* ------------------------------------------------------------ player chip */
 
-.who { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+.who { display: flex; align-items: center; gap: var(--s-3); min-width: 0; text-decoration: none; color: inherit; }
 .mark {
   flex: none;
   display: grid;
@@ -138,7 +163,7 @@ a.row:hover { background: linear-gradient(90deg, transparent, rgba(255, 255, 255
 
 /* ------------------------------------------------------------ empty / loading */
 
-.empty { padding: var(--s-6) 0; display: grid; gap: var(--s-3); justify-items: start; color: var(--dust); }
+.empty { padding: var(--s-5) 0; display: grid; gap: var(--s-3); justify-items: start; color: var(--dust); }
 .empty strong { color: var(--chalk); font-weight: 600; font-size: var(--t-lg); }
 
 .loading { display: grid; place-items: center; min-height: 40vh; color: var(--ash); gap: var(--s-3); font-family: var(--f-cond); font-weight: 600; }
@@ -149,6 +174,7 @@ a.row:hover { background: linear-gradient(90deg, transparent, rgba(255, 255, 255
 /* ------------------------------------------------------------ key/value spec list */
 
 .spec { display: grid; grid-template-columns: max-content 1fr; gap: var(--s-2) var(--s-4); margin: 0; }
+.specRow { display: contents; }
 .spec dt { color: var(--ash); font-family: var(--f-cond); font-weight: 600; }
 .spec dd { margin: 0; font-weight: 500; }
 

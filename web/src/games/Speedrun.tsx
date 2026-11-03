@@ -88,14 +88,14 @@ export function SpeedrunPlay({ pub, mine, me, canAct, pending, act, stage, serve
   return (
     <div className={s.play}>
       <div className={s.task}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={s.taskHead}>
           <Chip tone="info">{KIND[task.kind] ?? task.kind}</Chip>
           <Stopwatch from={stage.roundStartedAt} serverNow={serverNow} stopAt={locked ? (stoppedAt ?? serverNow()) : null} />
         </div>
         <p className={s.taskPrompt}>{task.prompt}</p>
         <Detail d={task.detail} kind={task.kind} />
       </div>
-      <div className={s.grow} style={{ justifyContent: 'flex-end' }}>
+      <div className={`${s.grow} ${s.growEnd}`}>
         {locked ? (
           <div className={s.locked} role="status">
             <Icon name="lock" size={20} />
@@ -129,9 +129,7 @@ export function SpeedrunPlay({ pub, mine, me, canAct, pending, act, stage, serve
             </Button>
           </form>
         )}
-        <p className={s.small} style={{ textAlign: 'center' }}>
-          Wrong or no answer is out. Fast and right survives.
-        </p>
+        <p className={`${s.small} ${s.center}`}>Wrong or no answer is out. Fast and right survives.</p>
       </div>
     </div>
   );
@@ -149,7 +147,7 @@ export function SpeedrunReveal({ reveal, myId, name }: RevealProps) {
     <div className={s.reveal}>
       <div className={s.revealHead}>
         <p className={s.small}>Answer</p>
-        <p className={s.big} style={{ color: '#6fa8ff' }}>{r.answer}</p>
+        <p className={`${s.big} ${s.inSpeed}`}>{r.answer}</p>
         <p className={s.small}>{r.voided ? 'Nobody got it. The task is void and everyone stays in.' : `Cut quota this round: at least ${r.quota}.`}</p>
         {mine !== undefined && <p>{mine === null ? 'You didn’t answer.' : mine.correct ? `Correct in ${(mine.ms / 1000).toFixed(2)}s` : `“${mine.text}” was wrong`}</p>}
       </div>

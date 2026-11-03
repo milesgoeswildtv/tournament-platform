@@ -21,14 +21,22 @@ export function ZeroHourPlay({ pub, mine, me, canAct, pending, act }: PlayProps)
   return (
     <div className={s.play}>
       <div className={s.grow}>
-        <p className={s.hint}>
-          Target: <b style={{ color: 'var(--sodium)' }}>{pub?.percent ?? 67}%</b> of everyone’s average. Numbers stay hidden until the call.
+        <p className={s.formula}>
+          Target = <b>{pub?.percent ?? 67}%</b> of the room’s average
         </p>
         <div className={s.readout}>
-          <span className={s.readoutNum} data-empty={!shown} aria-live="polite">
-            {shown || '—'}
-          </span>
-          <span className={s.small}>Pick a whole number, 0 to 100</span>
+          <div className={s.counter} data-locked={locked !== null} aria-live="polite" aria-label={shown ? `Your number: ${shown}` : 'No number yet'}>
+            {[0, 1, 2].map((i) => {
+              const pad = shown ? shown.padStart(3, '0') : '';
+              const lead = !shown || (i < 3 - shown.length);
+              return (
+                <span key={i} data-lead={lead}>
+                  {shown ? pad[i] : ''}
+                </span>
+              );
+            })}
+          </div>
+          <span className={s.small}>{locked !== null ? 'Locked. Hidden until the call.' : '0 to 100. Hidden until the call.'}</span>
         </div>
       </div>
       {!disabled && (
@@ -74,7 +82,7 @@ export function ZeroHourReveal({ reveal, myId, name }: RevealProps) {
         <p className={s.small}>
           {r.average === null ? 'Nobody submitted.' : `Average ${r.average.toFixed(2)} × ${r.percent}% =`}
         </p>
-        {r.target !== null && <p className={s.big} style={{ color: 'var(--sodium)' }}>Target {r.target.toFixed(2)}</p>}
+        {r.target !== null && <p className={`${s.big} ${s.inSodium}`}>Target {r.target.toFixed(2)}</p>}
         {r.winner && <p>Closest: <b>{name(r.winner)}</b> with {r.values[r.winner]}</p>}
         {mine !== undefined && r.target !== null && <p className={s.small}>Yours: {mine}, off by {Math.abs(mine - r.target).toFixed(2)}</p>}
       </div>

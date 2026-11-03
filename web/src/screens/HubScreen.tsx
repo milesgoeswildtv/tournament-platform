@@ -4,7 +4,9 @@ import { useLoad } from '../lib/useLoad';
 import { navigate, Link } from '../lib/router';
 import { STATUS, ago, money, ordinal, plural, prizeLine } from '../lib/format';
 import { Button, TextInput } from '../ui/controls';
-import { Chip, Empty, Page, Plate, Row, Rows, Section } from '../ui/layout';
+import { Chip, Empty, Page, Row, Rows, Section, Text } from '../ui/layout';
+import { Hazard } from '../ui/live';
+import { MemberCard } from '../ui/venue';
 import { Icon } from '../ui/Icon';
 import s from './screens.module.css';
 
@@ -47,6 +49,18 @@ export function TournamentRow({ t, mine = true }: { t: TournamentSummary; mine?:
   );
 }
 
+function Door({ to, icon, title, children }: { to: string; icon: 'sponsor' | 'library' | 'ranks'; title: string; children: string }) {
+  return (
+    <Link to={to} className={s.door}>
+      <Icon name={icon} size={26} />
+      <span className={s.doorText}>
+        <b>{title}</b>
+        <span>{children}</span>
+      </span>
+    </Link>
+  );
+}
+
 export function HubScreen() {
   const session = useSession();
   const me = useLoad(() => get<{ stats: Stats; unread: number }>('/api/me'));
@@ -70,70 +84,58 @@ export function HubScreen() {
     if (c) navigate(`/j/${c}`);
   };
 
+  const stats: [string, string | number][] = [
+    ['Stage wins', st?.stageWins ?? '–'],
+    ['Titles', st?.titles ?? '–'],
+    ['Played', st?.tournamentsPlayed ?? '–'],
+    ['Best finish', st?.bestFinish ? ordinal(st.bestFinish) : '–'],
+  ];
+
   return (
     <Page>
-      <Plate cut className={s.record}>
-        <div className={s.recordTop}>
-          <div>
-            <h1 className={s.recordName}>{session?.user.name}</h1>
-            <p className={s.recordTag}>#{session?.user.tag}</p>
-          </div>
+      <MemberCard
+        name={session?.user.name ?? ''}
+        id={`Player #${session?.user.tag}`}
+        stats={stats}
+        action={
           <Button size="sm" variant="ghost" to="/me">
             Profile
           </Button>
-        </div>
-        <div className={s.recordLine}>
-          <div className={s.recordStat}>
-            <b>{st?.stageWins ?? '–'}</b>
-            <span>Stage wins</span>
-          </div>
-          <div className={s.recordStat}>
-            <b>{st?.titles ?? '–'}</b>
-            <span>Titles</span>
-          </div>
-          <div className={s.recordStat}>
-            <b>{st?.tournamentsPlayed ?? '–'}</b>
-            <span>Played</span>
-          </div>
-          <div className={s.recordStat}>
-            <b>{st?.bestFinish ? ordinal(st.bestFinish) : '–'}</b>
-            <span>Best finish</span>
-          </div>
-        </div>
-      </Plate>
+        }
+      />
 
       {live.map((t) => (
-        <Plate key={t.id} live cut>
-          <div className={s.liveCard}>
+        <Link key={t.id} to={`/t/${t.id}`} className={s.liveNow}>
+          <Hazard />
+          <span className={s.liveBody}>
             <Chip tone="live" dot>
               {t.status === 'COUNTDOWN' ? 'Starting now' : `Live: stage ${t.currentStage} of ${t.stages}`}
             </Chip>
-            <h2 className={s.liveTitle}>{t.title}</h2>
-            <p className={s.liveMeta}>
-              <span>{prizeLine(t)}</span>
-              <span>{plural(t.players, 'player')}</span>
-            </p>
-            <Button variant="primary" block size="lg" to={`/t/${t.id}`}>
-              Enter the room
-            </Button>
-          </div>
-        </Plate>
+            <span className={s.liveTitle}>{t.title}</span>
+            <Text tone="dust" size="sm">
+              {prizeLine(t)}, {plural(t.players, 'player')}
+            </Text>
+            <span className={s.liveGo}>
+              Enter the room <Icon name="next" size={20} />
+            </span>
+          </span>
+        </Link>
       ))}
 
       <Section title="Join with a code">
         <form className={s.quickJoin} onSubmit={join}>
           <TextInput
             aria-label="Invite code"
-            placeholder="Invite code"
+            placeholder="8-character code"
             value={code}
             maxLength={12}
+            mono
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            style={{ fontFamily: 'var(--f-code)', letterSpacing: '0.18em' }}
           />
-          <Button type="submit" variant="secondary" disabled={code.trim().length < 6}>
+          <Button type="submit" variant="primary" disabled={code.trim().length < 6}>
             Join
           </Button>
         </form>
@@ -143,7 +145,7 @@ export function HubScreen() {
         <Section title="Inbox" aside={<Link to="/me#inbox">All</Link>}>
           <Rows>
             {unread.map((n) => (
-              <Row key={n.id} to={n.link ?? undefined} title={n.title} meta={<span>{n.body}</span>} end={<span style={{ fontSize: 13 }}>{ago(n.created_at)}</span>} />
+              <Row key={n.id} to={n.link ?? undefined} title={n.title} meta={<span>{n.body}</span>} end={<Text as="span" tone="ash" size="sm">{ago(n.created_at)}</Text>} />
             ))}
           </Rows>
         </Section>
@@ -157,7 +159,7 @@ export function HubScreen() {
             ))}
           </Rows>
         ) : (
-          <Empty title="No lobbies yet">Join with an invite code, or sponsor a tournament and invite your crew.</Empty>
+          <Empty title="No lobbies yet">Enter an invite code above, or sponsor a tournament and invite your crew.</Empty>
         )}
       </Section>
 
@@ -171,31 +173,13 @@ export function HubScreen() {
         </Section>
       )}
 
-      <nav className={s.hubNav} aria-label="Sections">
-        <Link to="/sponsor">
-          <Icon name="sponsor" />
-          <b>Sponsor</b>
-        </Link>
-        <Link to="/join">
-          <Icon name="join" />
-          <b>Join</b>
-        </Link>
-        <Link to="/games">
-          <Icon name="library" />
-          <b>Game library</b>
-        </Link>
-        <Link to="/ranks">
-          <Icon name="ranks" />
-          <b>Leaderboards</b>
-        </Link>
-        <Link to="/me">
-          <Icon name="profile" />
-          <b>Profile</b>
-        </Link>
-        <Link to="/settings">
-          <Icon name="settings" />
-          <b>Settings</b>
-        </Link>
+      <nav className={s.doors} aria-label="More">
+        <Door to="/sponsor" icon="sponsor" title="Sponsor a tournament">
+          Put up the prize, pick the games, run the room.
+        </Door>
+        <Door to="/games" icon="library" title="Game library">
+          Seven games. Learn the rules before they count.
+        </Door>
       </nav>
 
       <Section title="History">
@@ -209,9 +193,9 @@ export function HubScreen() {
           <Empty title="Nothing finished yet">Your results land here after your first tournament.</Empty>
         )}
         {st && st.prizeAllocations.length > 0 && (
-          <p style={{ color: 'var(--dust)', fontSize: 14 }}>
+          <Text tone="dust" size="sm">
             Prize allocations to you: {st.prizeAllocations.map((p) => money(p.cents, p.currency)).join(' + ')} in sponsor commitments (not payments).
-          </p>
+          </Text>
         )}
       </Section>
     </Page>

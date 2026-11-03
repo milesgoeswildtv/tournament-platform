@@ -5,6 +5,7 @@ import { Link, useLocation } from '../lib/router';
 import { useToasts, dismiss } from '../lib/toast';
 import { setPrefs, usePrefs } from '../lib/prefs';
 import { audio } from '../lib/audio';
+import { TapeMark } from './venue';
 import s from './shell.module.css';
 
 const TABS: { to: string; label: string; icon: IconName; match: RegExp }[] = [
@@ -23,12 +24,9 @@ const RAIL: typeof TABS = [
   { to: '/settings', label: 'Settings', icon: 'settings', match: /^\/settings/ },
 ];
 
+/** The product has no name yet, so the sign is taped over. */
 export function Wordmark() {
-  return (
-    <Link to="/" className={s.wordmark} aria-label="NAME TBD — hub">
-      NAME<span>TBD</span>
-    </Link>
-  );
+  return <TapeMark to="/" />;
 }
 
 export function MusicButton() {

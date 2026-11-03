@@ -2,13 +2,13 @@ import type { GameId } from '@shared/client';
 
 /** Each game's own light within the shared palette. */
 export const GAME_ACCENT: Record<GameId, string> = {
-  'guess-color': '#efc93c',
-  'zero-hour': '#bde2e4',
-  'high-low': '#86d17a',
-  decode: '#ece7db',
-  'suited-up': '#ee4b3b',
-  'pressure-cooker': '#f5a23a',
-  speedrun: '#6fa8ff',
+  'guess-color': 'var(--g-guess-color)',
+  'zero-hour': 'var(--g-zero-hour)',
+  'high-low': 'var(--g-high-low)',
+  decode: 'var(--g-decode)',
+  'suited-up': 'var(--g-suited-up)',
+  'pressure-cooker': 'var(--g-pressure-cooker)',
+  speedrun: 'var(--g-speedrun)',
 };
 
 const CANS = ['var(--can-red)', 'var(--can-yellow)', 'var(--can-green)', 'var(--can-blue)', 'var(--can-white)'];

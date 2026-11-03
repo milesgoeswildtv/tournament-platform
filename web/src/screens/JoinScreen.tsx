@@ -2,9 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { ApiError, get, post, useSession, type TournamentSummary } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { navigate } from '../lib/router';
-import { STRUCTURE, money, plural, prizeLine, until } from '../lib/format';
+import { BILL_STAMP, STRUCTURE, money, plural, prizeLine, until } from '../lib/format';
 import { Button, TextInput } from '../ui/controls';
-import { Chip, Empty, Loading, Note, Page, PageHead, Plate, Rows, Section, Spec } from '../ui/layout';
+import { Empty, Loading, Note, Page, PageHead, Rows, Section, Spec, Stack, Text } from '../ui/layout';
+import { Bill } from '../ui/venue';
 import { TournamentRow } from './HubScreen';
 import { toast } from '../lib/toast';
 import s from './screens.module.css';
@@ -108,41 +109,55 @@ export function InviteScreen({ code }: { code: string }) {
   return (
     <Page>
       <div className={s.invite}>
-        <Chip tone={d.valid ? 'info' : 'stop'}>{d.valid ? `Invite ${d.invite.code}` : 'Invite unavailable'}</Chip>
-        <h1 className={s.inviteTitle}>{t?.title ?? 'Tournament'}</h1>
+        <Text tone={d.valid ? 'fluoro' : 'stop'} cond>
+          {d.valid ? `You’re invited. Code ${d.invite.code}` : 'This invite can’t be used'}
+        </Text>
+        {t ? (
+          <Bill
+            presents={`${t.sponsor.name ?? 'A sponsor'} presents`}
+            title={t.title}
+            stamp={BILL_STAMP[t.status]}
+            facts={[
+              { label: 'On the line', value: money(t.commitmentCents, t.currency) },
+              { label: 'Stages', value: t.stages },
+              { label: 'Players', value: `${t.players}/${t.maxPlayers}` },
+            ]}
+          />
+        ) : (
+          <h1 className={s.inviteTitle}>Tournament</h1>
+        )}
         {t && (
-          <Plate>
-            <Spec
-              items={[
-                ['Sponsor', t.sponsor.name ?? 'Unknown'],
-                ['Prizes', prizeLine(t)],
-                ['Payout', STRUCTURE[t.structure].label],
-                ['Committed', money(t.commitmentCents, t.currency)],
-                ['Stages', `${t.stages}${t.selection === 'RANDOM' ? ', random games' : ''}`],
-                ['Timer', `${t.timer.minSeconds}–${t.timer.maxSeconds}s per round`],
-                ['Players', `${t.players} of ${t.maxPlayers}`],
-                ['Status', t.status === 'RUNNING' ? `Live, stage ${t.currentStage}${t.lateEntry ? ' (late entry open)' : ''}` : t.status === 'LOBBY' ? 'Lobby open' : t.status.toLowerCase()],
-                ...(d.valid ? ([['Invite', `Expires in ${until(d.invite.expiresAt)}, ${plural(d.invite.remaining, 'use')} left`]] as [string, string][]) : []),
-              ]}
-            />
-          </Plate>
+          <Spec
+            items={[
+              ['Prizes', prizeLine(t)],
+              ['Payout', STRUCTURE[t.structure].label],
+              ['Games', t.selection === 'RANDOM' ? 'Random, revealed stage by stage' : 'Picked by the sponsor'],
+              ['Rounds', `${t.timer.minSeconds}–${t.timer.maxSeconds}s each`],
+              ['Status', t.status === 'RUNNING' ? `Live, stage ${t.currentStage}${t.lateEntry ? ' (late entry open)' : ''}` : t.status === 'LOBBY' ? 'Lobby open' : BILL_STAMP[t.status]],
+              ...(d.valid ? ([['Invite', `Expires in ${until(d.invite.expiresAt)}, ${plural(d.invite.remaining, 'use')} left`]] as [string, string][]) : []),
+            ]}
+          />
         )}
         {!d.valid && <p className={s.inviteBad}>{REASON[d.reason ?? ''] ?? 'This invite can’t be used.'}</p>}
-        {err && <p className={s.inviteBad} role="alert">{err}</p>}
+        {err && (
+          <p className={s.inviteBad} role="alert">
+            {err}
+          </p>
+        )}
         {d.valid &&
           (session ? (
             <Button variant="primary" size="lg" block busy={busy} onClick={join}>
               Join tournament
             </Button>
           ) : (
-            <div style={{ display: 'grid', gap: 8 }}>
+            <Stack gap={2}>
               <Button variant="primary" size="lg" block to={`/auth?mode=signup&next=${next}`}>
                 Create account to join
               </Button>
               <Button variant="secondary" block to={`/auth?next=${next}`}>
                 I have an account
               </Button>
-            </div>
+            </Stack>
           ))}
         <Note>Prize amounts are commitments made by the sponsor. This app records and calculates them; it does not hold or pay out money.</Note>
       </div>

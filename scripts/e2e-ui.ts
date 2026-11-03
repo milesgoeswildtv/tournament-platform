@@ -251,7 +251,10 @@ async function play(p: Page, who: string, smart: boolean) {
     if (phase === 'FINISHED') return;
     if (phase === 'STAGE_INTRO') await shot(p, `20-intro-${game}`);
     if (phase === 'STAGE_RESULT') await shot(p, '30-stage-result');
-    if (phase === 'REVEAL') await shot(p, `22-reveal-${game}`);
+    if (phase === 'REVEAL' && !shots.has(`22-reveal-${game}`)) {
+      await p.waitForTimeout(650); // let the dealt cards, tiles and stamps land
+      await shot(p, `22-reveal-${game}`);
+    }
     if (phase === 'ROUND' && status === 'alive' && !acted.has(key)) {
       acted.add(key);
       await shot(p, `21-play-${game}`);
@@ -280,12 +283,15 @@ for (const p of [A, B]) {
   await p.getByRole('heading', { name: 'Standings' }).waitFor();
   await p.getByRole('heading', { name: 'Prizes' }).waitFor();
 }
+await A.waitForTimeout(600); // champion stamp lands
 await shot(A, '40-final-host', true);
 await shot(B, '41-final-player', true);
 
-const finalNames = async (p: Page) => (await p.locator('table').first().locator('tbody tr td:nth-child(2)').allTextContents()).sort();
-assert.deepEqual(await finalNames(A), [NAMES.host, NAMES.player, NAMES.bot].sort());
-assert.deepEqual(await finalNames(A), await finalNames(B));
+// Both devices show the same standings, in the same order, with the same ranks.
+const finalBoard = async (p: Page) => p.locator('[data-standing]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-rank')}:${e.getAttribute('data-standing')}`));
+const boardA = await finalBoard(A);
+assert.deepEqual(boardA.map((r) => r.split(':')[1]).sort(), [NAMES.host, NAMES.player, NAMES.bot].sort());
+assert.deepEqual(boardA, await finalBoard(B));
 
 await A.getByRole('link', { name: 'Full results and stage history' }).click();
 await A.getByText('Stage by stage').waitFor();

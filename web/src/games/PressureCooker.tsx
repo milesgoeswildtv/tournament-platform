@@ -41,7 +41,7 @@ function Gauge({ needle }: { needle: RefObject<SVGLineElement | null> }) {
             </g>
           );
         })}
-        <line ref={needle} x1="100" y1="100" x2="100" y2="22" stroke="var(--chalk)" strokeWidth="4" strokeLinecap="square" style={{ transformOrigin: '100px 100px' }} />
+        <line ref={needle} className={s.needle} x1="100" y1="100" x2="100" y2="22" stroke="var(--chalk)" strokeWidth="4" strokeLinecap="square" />
         <circle cx="100" cy="100" r="8" fill="var(--chalk)" />
       </svg>
     </div>
@@ -95,7 +95,7 @@ export function PressurePlay({ pub, mine, me, canAct, pending, act, serverNow, n
       </div>
       <div className={s.action}>
         {mineCash !== null ? (
-          <div className={s.locked} role="status" style={{ borderColor: 'var(--go-dim)', color: 'var(--go)' }}>
+          <div className={`${s.locked} ${s.lockedGo}`} role="status">
             <Icon name="lock" size={20} />
             <span>Cashed out at {mineCash.toFixed(2)}×</span>
           </div>
@@ -113,7 +113,7 @@ export function PressurePlay({ pub, mine, me, canAct, pending, act, serverNow, n
             Cash out
           </button>
         ) : canAct && broken ? (
-          <div className={s.locked} role="status" style={{ borderColor: 'var(--stop-dim)', color: 'var(--stop)' }}>
+          <div className={`${s.locked} ${s.lockedStop}`} role="status">
             Burst before you cashed out
           </div>
         ) : (
@@ -132,7 +132,7 @@ export function PressureReveal({ reveal, myId, name }: RevealProps) {
     <div className={s.reveal}>
       <div className={s.revealHead}>
         <p className={s.small}>Pressure broke at</p>
-        <p className={s.big} style={{ color: 'var(--stop)' }}>{r.breakAt.toFixed(2)}×</p>
+        <p className={`${s.big} ${s.inStop}`}>{r.breakAt.toFixed(2)}×</p>
         {r.voided ? <p>Everyone got burned. The run replays.</p> : r.winner && <p>Highest lock: <b>{name(r.winner)}</b> at {(r.cashouts[r.winner] ?? 0).toFixed(2)}×</p>}
         {mine !== undefined && <p className={s.small}>{mine === null ? 'You didn’t cash out in time.' : `You locked ${mine.toFixed(2)}×.`}</p>}
       </div>

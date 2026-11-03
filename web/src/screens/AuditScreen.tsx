@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { get, type TournamentSummary } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { clockTime, dateTime } from '../lib/format';
-import { Segmented } from '../ui/controls';
+import { Button, Segmented } from '../ui/controls';
 import { Empty, Loading, Note, Page, PageHead, Section, layoutStyles as l } from '../ui/layout';
 import { Link } from '../lib/router';
 import s from './screens.module.css';
@@ -21,12 +21,20 @@ interface Audit {
 type Tab = 'events' | 'submissions' | 'eliminations' | 'players' | 'connections' | 'config';
 
 const ms = (t: number) => `${clockTime(t)}.${String(t % 1000).padStart(3, '0')}`;
+const human = (type: string) => type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, ' ');
 
 export function AuditScreen({ id }: { id: string }) {
   const q = useLoad(() => get<Audit>(`/api/tournaments/${id}/audit`), [id]);
   const [tab, setTab] = useState<Tab>('events');
   if (q.loading && !q.data) return <Loading />;
-  if (q.error) return <Page><Empty title="Audit log unavailable">{q.error.message}</Empty></Page>;
+  if (q.error)
+    return (
+      <Page>
+        <Empty title="Audit log unavailable" action={<Button to="/">Back to the hub</Button>}>
+          {q.error.message}
+        </Empty>
+      </Page>
+    );
   const d = q.data!;
   const who = new Map(d.participants.map((p) => [p.user_id, p.name]));
   const nm = (uid: string | null) => (uid ? who.get(uid) ?? uid : 'Server');
@@ -34,7 +42,7 @@ export function AuditScreen({ id }: { id: string }) {
   return (
     <Page wide>
       <PageHead title="Audit log" lede={<>Every server decision for <Link to={`/t/${id}`}>{d.tournament.title}</Link>, in order. Rows are append-only; the database refuses edits.</>} />
-      <div style={{ overflowX: 'auto' }}>
+      <div className={s.tabsRow}>
         <Segmented<Tab>
           label="Audit section"
           scroll
@@ -54,22 +62,25 @@ export function AuditScreen({ id }: { id: string }) {
       <Section title={{ events: 'Event history', submissions: 'Submissions', eliminations: 'Eliminations', players: 'Participation', connections: 'Disconnects and reconnects', config: 'Sponsor configuration history' }[tab]}>
         <div className={l.tableWrap}>
           {tab === 'events' && (
-            <table className={l.table}>
-              <thead>
-                <tr><th>#</th><th>Server time</th><th>Event</th><th>By</th><th>Detail</th></tr>
-              </thead>
-              <tbody>
-                {d.events.map((e) => (
-                  <tr key={e.seq}>
-                    <td>{e.seq}</td>
-                    <td className={s.nowrap}>{ms(e.created_at)}</td>
-                    <td className={s.eventType}>{e.type}</td>
-                    <td>{nm(e.actor_id)}</td>
-                    <td><pre className={s.payload}>{JSON.stringify(e.payload, null, 0).slice(0, 360)}</pre></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ol className={s.log}>
+              {d.events.map((e) => (
+                <li key={e.seq} className={s.logRow}>
+                  <span className={s.logSeq}>{e.seq}</span>
+                  <div className={s.logMain}>
+                    <b>{human(e.type)}</b>
+                    <span>
+                      {ms(e.created_at)}, {nm(e.actor_id)}
+                    </span>
+                    <details>
+                      <summary>
+                        <code>{e.type}</code>
+                      </summary>
+                      <pre className={s.payload}>{JSON.stringify(e.payload, null, 2)}</pre>
+                    </details>
+                  </div>
+                </li>
+              ))}
+            </ol>
           )}
           {tab === 'submissions' && (
             <table className={l.table}>
@@ -84,7 +95,7 @@ export function AuditScreen({ id }: { id: string }) {
                     <td>{x.round}</td>
                     <td>{x.name}</td>
                     <td><code className={s.payload}>{x.action_json}</code></td>
-                    <td style={{ color: x.accepted ? 'var(--go)' : 'var(--stop)' }}>{x.accepted ? 'Accepted' : `Rejected: ${x.reject_reason}`}</td>
+                    <td className={x.accepted ? s.ok : s.bad}>{x.accepted ? 'Accepted' : `Rejected: ${x.reject_reason}`}</td>
                   </tr>
                 ))}
               </tbody>
@@ -116,7 +127,9 @@ export function AuditScreen({ id }: { id: string }) {
               <tbody>
                 {d.participants.map((p) => (
                   <tr key={p.user_id}>
-                    <td>{p.name} <span style={{ color: 'var(--ash)' }}>#{p.tag}</span></td>
+                    <td>
+                      {p.name} <span className={s.dim}>#{p.tag}</span>
+                    </td>
                     <td>{p.role === 'HOST' ? (p.competes ? 'Host (playing)' : 'Host') : 'Player'}</td>
                     <td>{dateTime(p.joined_at)}</td>
                     <td>Stage {p.eligible_from}</td>
@@ -137,7 +150,7 @@ export function AuditScreen({ id }: { id: string }) {
                   <tr key={i}>
                     <td className={s.nowrap}>{ms(x.created_at)}</td>
                     <td>{nm(x.actor_id)}</td>
-                    <td style={{ color: x.type === 'PLAYER_DISCONNECTED' ? 'var(--stop)' : 'var(--go)' }}>{x.type === 'PLAYER_DISCONNECTED' ? 'Disconnected' : 'Connected'}</td>
+                    <td className={x.type === 'PLAYER_DISCONNECTED' ? s.bad : s.ok}>{x.type === 'PLAYER_DISCONNECTED' ? 'Disconnected' : 'Connected'}</td>
                     <td>{String(x.payload.phase ?? '')}</td>
                     <td>{String(x.payload.stage ?? 0)} / {String(x.payload.round ?? 0)}</td>
                   </tr>
@@ -156,7 +169,7 @@ export function AuditScreen({ id }: { id: string }) {
                     <td>{dateTime(c.created_at)}</td>
                     <td>{c.reason}</td>
                     <td><code className={s.payload}>{c.config_hash.slice(0, 16)}</code></td>
-                    <td><details><summary style={{ cursor: 'pointer' }}>View</summary><pre className={s.payload}>{JSON.stringify(JSON.parse(c.config_json), null, 2)}</pre></details></td>
+                    <td><details><summary className={s.summary}>View</summary><pre className={s.payload}>{JSON.stringify(JSON.parse(c.config_json), null, 2)}</pre></details></td>
                   </tr>
                 ))}
               </tbody>

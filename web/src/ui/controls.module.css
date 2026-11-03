@@ -132,6 +132,9 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   min-height: var(--tap-lg);
 }
 
+.monoInput { font-family: var(--f-code); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+.monoInput::placeholder { text-transform: none; }
+
 .prefixWrap { position: relative; }
 .prefix { position: absolute; left: var(--s-4); top: 50%; transform: translateY(-50%); color: var(--dust); pointer-events: none; }
 .prefixWrap .input { padding-left: 34px; }

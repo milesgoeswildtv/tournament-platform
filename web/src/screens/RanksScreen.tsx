@@ -53,14 +53,13 @@ export function RanksScreen() {
       ) : rows.length === 0 ? (
         <Empty title="No results yet">The board fills in as tournaments finish.</Empty>
       ) : (
-        <div>
+        <div className={s.ranks}>
           {rows.map((r, i) => (
             <Link key={r.tag} to={`/p/${r.tag}`} className={`${s.rankRow} ${i < 3 ? s.rankTop : ''} ${r.tag === session?.user.tag ? s.isMe : ''}`}>
               <span className={s.rankNo}>{i + 1}</span>
-              <span>
-                <b style={{ fontWeight: 600 }}>{r.name}</b>
-                <br />
-                <span style={{ fontSize: 13, color: 'var(--ash)' }}>
+              <span className={s.rankWho}>
+                <b>{r.name}</b>
+                <span>
                   {r.titles} title{r.titles === 1 ? '' : 's'}, {r.played} played
                 </span>
               </span>

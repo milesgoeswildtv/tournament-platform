@@ -3,9 +3,9 @@ import { get, post, useSession, type Stats, type TournamentSummary } from '../li
 import { useLoad } from '../lib/useLoad';
 import { ago, money, ordinal } from '../lib/format';
 import { Button } from '../ui/controls';
-import { Empty, Loading, Page, Plate, Row, Rows, Section, Stats as StatGrid } from '../ui/layout';
+import { Empty, Loading, Page, Row, Rows, Section, Text } from '../ui/layout';
+import { MemberCard } from '../ui/venue';
 import { TournamentRow } from './HubScreen';
-import s from './screens.module.css';
 
 interface Note {
   id: number;
@@ -17,21 +17,18 @@ interface Note {
   read_at: number | null;
 }
 
-function StatBlock({ st }: { st: Stats }) {
-  return (
-    <StatGrid
-      items={[
-        { label: 'Stage wins', value: st.stageWins },
-        { label: 'Titles', value: st.titles },
-        { label: 'Tournaments', value: st.tournamentsPlayed },
-        { label: 'Stages played', value: st.stagesPlayed },
-        { label: 'Rounds survived', value: st.roundsSurvived },
-        { label: 'Stage win rate', value: `${Math.round(st.stageWinRate * 100)}%` },
-        { label: 'Best finish', value: st.bestFinish ? ordinal(st.bestFinish) : '–' },
-        { label: 'Sponsored', value: st.sponsored },
-      ]}
-    />
-  );
+function record(st: Stats | undefined): [string, string | number][] {
+  const v = <T,>(f: (x: Stats) => T) => (st ? f(st) : '–');
+  return [
+    ['Stage wins', v((x) => x.stageWins)],
+    ['Titles', v((x) => x.titles)],
+    ['Tournaments', v((x) => x.tournamentsPlayed)],
+    ['Best finish', v((x) => (x.bestFinish ? ordinal(x.bestFinish) : '–'))],
+    ['Stages played', v((x) => x.stagesPlayed)],
+    ['Rounds survived', v((x) => x.roundsSurvived)],
+    ['Win rate', v((x) => `${Math.round(x.stageWinRate * 100)}%`)],
+    ['Sponsored', v((x) => x.sponsored)],
+  ] as [string, string | number][];
 }
 
 export function ProfileScreen({ tag }: { tag?: string }) {
@@ -54,24 +51,18 @@ function MyProfile() {
   const history = (list.data?.tournaments ?? []).filter((t) => t.status === 'FINISHED');
   return (
     <Page>
-      <Plate cut className={s.record}>
-        <div className={s.recordTop}>
-          <div>
-            <h1 className={s.recordName}>{session.user.name}</h1>
-            <p className={s.recordTag}>
-              Player ID #{session.user.tag}
-              {session.user.handle ? `, signs in as ${session.user.handle}` : ''}
-            </p>
-          </div>
+      <MemberCard
+        name={session.user.name}
+        id={`Player #${session.user.tag}${session.user.handle ? `, signs in as ${session.user.handle}` : ''}. Member since ${new Date(session.user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}.`}
+        stats={record(st)}
+        action={
           <Button size="sm" variant="ghost" to="/settings">
             Edit
           </Button>
-        </div>
-        <p style={{ color: 'var(--ash)', fontSize: 14 }}>Member since {new Date(session.user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
-      </Plate>
-      {st ? <StatBlock st={st} /> : <Loading />}
+        }
+      />
       {st && st.prizeAllocations.length > 0 && (
-        <p style={{ color: 'var(--dust)' }}>Prize allocations to you: {st.prizeAllocations.map((p) => money(p.cents, p.currency)).join(' + ')} (sponsor commitments, not payments).</p>
+        <Text tone="dust">Prize allocations to you: {st.prizeAllocations.map((p) => money(p.cents, p.currency)).join(' + ')} (sponsor commitments, not payments).</Text>
       )}
       <Section title="Tournament history" aside={history.length || undefined}>
         {history.length ? (
@@ -89,16 +80,30 @@ function MyProfile() {
           title="Inbox"
           aside={
             unread ? (
-              <button type="button" style={{ background: 'none', border: 0, color: 'var(--fluoro)', fontFamily: 'var(--f-cond)', fontWeight: 600, minHeight: 32 }} onClick={() => post('/api/me/notifications/read').then(() => notes.reload())}>
+              <Button size="sm" variant="ghost" onClick={() => post('/api/me/notifications/read').then(() => notes.reload())}>
                 Mark all read
-              </button>
+              </Button>
             ) : undefined
           }
         >
           {(notes.data?.notifications ?? []).length ? (
             <Rows>
               {notes.data!.notifications.map((n) => (
-                <Row key={n.id} to={n.link ?? undefined} title={<span style={{ color: n.read_at ? 'var(--dust)' : undefined }}>{n.title}</span>} meta={<span>{n.body}</span>} end={<span style={{ fontSize: 13 }}>{ago(n.created_at)}</span>} />
+                <Row
+                  key={n.id}
+                  to={n.link ?? undefined}
+                  title={
+                    <Text as="span" tone={n.read_at ? 'dust' : 'chalk'} size="lg">
+                      {n.title}
+                    </Text>
+                  }
+                  meta={<span>{n.body}</span>}
+                  end={
+                    <Text as="span" tone="ash" size="sm">
+                      {ago(n.created_at)}
+                    </Text>
+                  }
+                />
               ))}
             </Rows>
           ) : (
@@ -117,18 +122,12 @@ function OtherProfile({ tag }: { tag: string }) {
   const d = q.data!;
   return (
     <Page>
-      <Plate cut className={s.record}>
-        <div>
-          <h1 className={s.recordName}>{d.player.name}</h1>
-          <p className={s.recordTag}>#{d.player.tag}</p>
-        </div>
-      </Plate>
-      <StatBlock st={d.stats} />
+      <MemberCard name={d.player.name} id={`Player #${d.player.tag}`} stats={record(d.stats)} />
       <Section title="Recent tournaments">
         {d.history.length ? (
           <Rows>
             {d.history.map((h) => (
-              <Row key={h.id} to={`/t/${h.id}/results`} title={h.title} meta={<span>{h.rank ? `Finished ${ordinal(h.rank)}` : 'Hosted'}{h.stage_wins ? `, ${h.stage_wins} stage wins` : ''}</span>} end={<span style={{ fontSize: 13 }}>{ago(h.finished_at)}</span>} />
+              <Row key={h.id} to={`/t/${h.id}/results`} title={h.title} meta={<span>{h.rank ? `Finished ${ordinal(h.rank)}` : 'Hosted'}{h.stage_wins ? `, ${h.stage_wins} stage wins` : ''}</span>} end={<Text as="span" tone="ash" size="sm">{ago(h.finished_at)}</Text>} />
             ))}
           </Rows>
         ) : (

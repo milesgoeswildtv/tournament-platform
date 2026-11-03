@@ -4,10 +4,12 @@ import { get, post, type Invite } from '../../lib/api';
 import { STRUCTURE, money, plural, until } from '../../lib/format';
 import { toast } from '../../lib/toast';
 import { Button } from '../../ui/controls';
-import { Chip, Note, Section, Who } from '../../ui/layout';
+import { Note, Section, Text } from '../../ui/layout';
 import { GameMark } from '../../ui/GameMark';
+import { Bill, PlayerTag, RoomCount, TagGrid, TicketStub } from '../../ui/venue';
 import { ChatPanel } from './Chat';
 import { useWide } from '../../lib/media';
+import { Icon } from '../../ui/Icon';
 import s from './room.module.css';
 
 export function PrizeBoard({ view }: { view: RoomView }) {
@@ -31,8 +33,7 @@ export function PrizeBoard({ view }: { view: RoomView }) {
         <div className={s.prize} key={a.id}>
           <span>
             {a.label}
-            <br />
-            <small style={{ color: 'var(--ash)' }}>{SPECIAL_AWARD_TYPES[a.type]?.describe(a.stage)}</small>
+            <small>{SPECIAL_AWARD_TYPES[a.type]?.describe(a.stage)}</small>
           </span>
           <b>{money(a.amountCents, cur)}</b>
         </div>
@@ -99,34 +100,35 @@ function InvitePanel({ tid, title, phase }: { tid: string; title: string; phase:
   if (!inv) return null;
   const expired = inv.expiresAt <= Date.now();
   const usedUp = inv.uses >= inv.maxUses;
+  const left = Math.max(0, inv.maxUses - inv.uses);
   return (
-    <Section title="Invite" aside={phase === 'LOBBY' ? undefined : 'Late entry'}>
+    <Section title="Invite" aside={phase === 'LOBBY' ? 'Share it to fill the room' : 'Late entry'}>
       <div className={s.invite}>
-        <div className={s.code} aria-label={`Invite code ${inv.code.split('').join(' ')}`}>
-          {inv.code}
-        </div>
-        <div className={s.inviteMeta}>
-          <Chip tone={expired ? 'stop' : 'info'}>{expired ? 'Expired' : `Expires in ${until(inv.expiresAt)}`}</Chip>
-          <Chip tone={usedUp ? 'stop' : 'muted'}>
-            {inv.uses} of {inv.maxUses} used
-          </Chip>
-        </div>
+        <TicketStub
+          code={inv.code}
+          void={expired || usedUp}
+          line={expired ? 'Expired. Make a new invite below.' : usedUp ? 'Every use is taken. Make a new invite below.' : `Expires in ${until(inv.expiresAt)}, ${inv.uses} of ${inv.maxUses} used`}
+          stubValue={left}
+          stubLabel={left === 1 ? 'use left' : 'uses left'}
+        />
         <div className={s.inviteBtns}>
           <Button icon="share" onClick={share} disabled={expired || usedUp}>
             Share link
           </Button>
-          <Button icon="copy" onClick={() => copy(inv.code, 'Code')}>
+          <Button icon="copy" onClick={() => copy(inv.code, 'Code')} disabled={expired || usedUp}>
             Copy code
           </Button>
         </div>
-        {inv.telegramLink && (
-          <Button size="sm" variant="ghost" icon="telegram" onClick={() => copy(inv.telegramLink!, 'Telegram link')}>
-            Copy Telegram link
+        <div className={s.inviteMore}>
+          {inv.telegramLink && (
+            <Button size="sm" variant="ghost" icon="telegram" onClick={() => copy(inv.telegramLink!, 'Telegram link')}>
+              Copy Telegram link
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" icon="refresh" busy={busy} onClick={regen}>
+            New invite (old code stops working)
           </Button>
-        )}
-        <Button size="sm" variant="ghost" icon="refresh" busy={busy} onClick={regen}>
-          Make a new invite (old one stops working)
-        </Button>
+        </div>
       </div>
     </Section>
   );
@@ -142,100 +144,106 @@ export function Lobby({ view, send, openChat, onLeave }: { view: RoomView; send:
   const c = view.config;
   const wide = useWide();
 
-  const actions = (
+  const actions = isHost ? (
     <>
-          {isHost ? (
-            <>
-              <Button variant="primary" size="lg" block disabled={!canStart} onClick={() => send({ t: 'start' })}>
-                {canStart ? `Start tournament (${competitors.length} players)` : 'Need 2 competitors to start'}
-              </Button>
-              <div className={s.dockRow}>
-                <Button icon="edit" to={`/t/${view.id}/edit`}>
-                  Edit settings
-                </Button>
-                <Button variant="danger" onClick={onLeave}>
-                  Cancel tournament
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className={s.waiting}>Waiting for {view.sponsorName} to start. You’ll get a 60-second countdown.</p>
-              <Button variant="ghost" onClick={onLeave}>
-                Leave lobby
-              </Button>
-            </>
-          )}
+      <Button variant="primary" size="lg" block disabled={!canStart} onClick={() => send({ t: 'start' })}>
+        {canStart ? `Start tournament (${competitors.length} players)` : 'Need 2 players to start'}
+      </Button>
+      <div className={s.dockRow}>
+        <Button icon="edit" to={`/t/${view.id}/edit`}>
+          Edit settings
+        </Button>
+        <Button variant="danger" onClick={onLeave}>
+          Cancel
+        </Button>
+      </div>
     </>
+  ) : (
+    <div className={s.waitRow}>
+      <p className={s.waiting}>
+        <i className={s.waitLamp} aria-hidden />
+        Waiting for {view.sponsorName} to start. You get a 60-second countdown.
+      </p>
+      <Button variant="ghost" size="sm" onClick={onLeave}>
+        Leave
+      </Button>
+    </div>
   );
+
+  const total = totalCommitmentCents(c);
+  const facts = [
+    { label: 'On the line', value: money(total, c.currency) },
+    { label: 'Stages', value: c.stages },
+    { label: 'Payout', value: STRUCTURE[c.payout.structure].short },
+  ];
 
   return (
     <>
       <div className={s.lobby}>
-        <header className={s.lobbyHead}>
-          <Chip tone="info" dot>
-            Lobby open
-          </Chip>
-          <h1 className={s.lobbyTitle}>{view.title}</h1>
-          <p className={s.host}>
-            Hosted by <b>{view.sponsorName}</b>. {STRUCTURE[c.payout.structure].describe}
-          </p>
-        </header>
-
         <div className={s.lobbyMain}>
-        <PrizeBoard view={view} />
+          <Bill presents={`${view.sponsorName} presents`} title={view.title} stamp="Lobby open" facts={facts} />
 
-        {isHost && !wide && <InvitePanel tid={view.id} title={view.title} phase={view.phase} />}
+          <section className={s.roomBlock} aria-label="Players">
+            <RoomCount n={competitors.length} label={competitors.length === 1 ? 'player in' : 'players in'} sub={`${competitors.length} of ${c.entry.maxPlayers} places taken`} live />
+            <TagGrid label="Players in the lobby">
+              {present.map((p) => (
+                <PlayerTag
+                  key={p.id}
+                  name={p.name}
+                  tag={p.tag}
+                  connected={p.connected}
+                  host={p.role === 'HOST'}
+                  me={p.id === me?.id}
+                  note={p.role === 'HOST' && !p.competes ? 'not playing' : p.eligibleFrom > 1 ? `from stage ${p.eligibleFrom}` : undefined}
+                />
+              ))}
+            </TagGrid>
+            {!canStart && <Text tone="ash" size="sm">The sponsor can start once two players are in.</Text>}
+          </section>
 
-        <Section title="Players" aside={`${competitors.length} of ${c.entry.maxPlayers}`}>
-          <div className={s.players}>
-            {present.map((p) => (
-              <div className={s.player} key={p.id} data-player={p.name}>
-                <Who name={p.name} tag={p.tag} />
-                <div className={s.playerEnd}>
-                  {p.role === 'HOST' && <Chip tone="live">{p.competes ? 'Host, playing' : 'Host'}</Chip>}
-                  {p.eligibleFrom > 1 && <Chip>From stage {p.eligibleFrom}</Chip>}
-                  {p.id === me?.id && <Chip tone="info">You</Chip>}
-                  <span className={s.conDot} data-on={p.connected} title={p.connected ? 'Connected' : 'Not connected'} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
+          {isHost && !wide && <InvitePanel tid={view.id} title={view.title} phase={view.phase} />}
 
-        <Section title="Stages" aside={c.games.selection === 'RANDOM' ? 'Random, revealed as you go' : plural(c.stages, 'stage')}>
-          <Lineup view={view} />
-          <p style={{ color: 'var(--dust)', fontSize: 14 }}>
-            Each stage is one game and may run several rounds. Round timer {c.timer.minSeconds}–{c.timer.maxSeconds}s, drawn per stage by the server.
-            {c.entry.lateEntry ? ` Late entry is open until stage ${c.entry.lateEntryUntilStage} starts.` : ' Entry closes when the tournament starts.'}
-          </p>
-        </Section>
+          <Section title="Prizes" aside={STRUCTURE[c.payout.structure].label}>
+            <PrizeBoard view={view} />
+            <Text tone="dust" size="sm">
+              {STRUCTURE[c.payout.structure].describe}
+            </Text>
+          </Section>
 
-        {!wide && (
-        <button type="button" className={s.ticker} onClick={openChat}>
-          {last ? (
-            <>
-              <b>{last.system ? 'Room' : last.name}</b>
-              <span>{last.text}</span>
-            </>
-          ) : (
-            <span>Open chat</span>
+          <Section title="Stages" aside={c.games.selection === 'RANDOM' ? 'Random, revealed as you go' : plural(c.stages, 'stage')}>
+            <Lineup view={view} />
+            <Text tone="dust" size="sm">
+              Each stage is one game and may run several rounds. Rounds last {c.timer.minSeconds}–{c.timer.maxSeconds}s, drawn per stage by the server.
+              {c.entry.lateEntry ? ` Late entry is open until stage ${c.entry.lateEntryUntilStage} starts.` : ' Entry closes when the tournament starts.'}
+            </Text>
+          </Section>
+
+          {!wide && (
+            <button type="button" className={s.ticker} onClick={openChat}>
+              <Icon name="chat" size={18} />
+              {last ? (
+                <>
+                  <b>{last.system ? 'Room' : last.name}</b>
+                  <span>{last.text}</span>
+                </>
+              ) : (
+                <span>Open chat</span>
+              )}
+            </button>
           )}
-        </button>
-        )}
 
-        <Note>Prizes are the sponsor’s commitment. The platform calculates who earns them; it doesn’t move money.</Note>
+          <Note>Prizes are the sponsor’s commitment. The platform calculates who earns them; it doesn’t move money.</Note>
         </div>
         {wide && (
-        <aside className={s.lobbySide}>
-          <div className={s.sideActions}>{actions}</div>
-          {isHost && <InvitePanel tid={view.id} title={view.title} phase={view.phase} />}
-          <Section title="Chat">
-            <div className={s.sideChat}>
-              <ChatPanel view={view} onSend={(text) => send({ t: 'chat', text })} />
-            </div>
-          </Section>
-        </aside>
+          <aside className={s.lobbySide}>
+            <div className={s.sideActions}>{actions}</div>
+            {isHost && <InvitePanel tid={view.id} title={view.title} phase={view.phase} />}
+            <Section title="Chat">
+              <div className={s.sideChat}>
+                <ChatPanel view={view} onSend={(text) => send({ t: 'chat', text })} />
+              </div>
+            </Section>
+          </aside>
         )}
       </div>
 

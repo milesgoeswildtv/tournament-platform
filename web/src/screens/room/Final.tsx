@@ -1,6 +1,7 @@
-import { money, ordinal } from '../../lib/format';
-import { Note, Section, layoutStyles as l } from '../../ui/layout';
+import { money, ordinal, plural } from '../../lib/format';
+import { Note, Section, Text, layoutStyles as l } from '../../ui/layout';
 import { Stamp } from '../../ui/live';
+import { Scoreboard, type ScoreRow } from '../../ui/venue';
 import sc from '../screens.module.css';
 
 export interface FinalRow {
@@ -35,75 +36,40 @@ export function FinalBoard({ rows, allocations, currency, myId }: { rows: FinalR
   }
   const unawarded = allocations.filter((a) => a.status === 'UNAWARDED').reduce((n, a) => n + a.amountCents, 0);
   const myPrize = myId ? totals.get(myId)?.cents ?? 0 : 0;
+  const board: ScoreRow[] = rows.map((r) => ({
+    playerId: r.playerId,
+    name: r.name,
+    rank: r.rank,
+    stageWins: r.stageWins,
+    detail: `${plural(r.outrightWins, 'outright win')}, ${plural(r.roundsSurvived, 'round')} survived`,
+    prize: totals.get(r.playerId) ? `${money(totals.get(r.playerId)!.cents, currency)} allocated` : null,
+  }));
   return (
     <>
       <div className={sc.champion}>
-        <p style={{ color: 'var(--dust)' }}>{champs.length > 1 ? 'Shared title' : champs.length ? 'Tournament winner' : 'No stage winners'}</p>
+        <Text tone="dust" cond>
+          {champs.length > 1 ? 'Shared title' : champs.length ? 'Tournament winner' : 'No stage winners'}
+        </Text>
         <h1 className={sc.championName}>{champs.length ? champs.map((c) => c.name).join(' + ') : 'Nobody'}</h1>
         {mine && (
-          <p>
-            You finished <b>{ordinal(mine.rank)}</b> with {mine.stageWins} stage win{mine.stageWins === 1 ? '' : 's'}
+          <Text>
+            You finished <b>{ordinal(mine.rank)}</b> with {plural(mine.stageWins, 'stage win')}
             {myPrize > 0 ? `, allocated ${money(myPrize, currency)}` : ''}.
-          </p>
+          </Text>
         )}
         {mine && mine.rank === 1 && mine.stageWins > 0 && <Stamp tone="live">Champion</Stamp>}
       </div>
 
       <Section title="Standings" aside="By stage wins">
-        <div className={l.tableWrap}>
-          <table className={l.table}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Player</th>
-                <th className={l.num}>Wins</th>
-                <th className={l.num}>Outright</th>
-                <th className={l.num}>Rounds</th>
-                <th className={l.num}>Stages</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.playerId} className={r.playerId === myId ? l.me : undefined}>
-                  <td>{r.rank}</td>
-                  <td>{r.name}</td>
-                  <td className={l.num}>{r.stageWins}</td>
-                  <td className={l.num}>{r.outrightWins}</td>
-                  <td className={l.num}>{r.roundsSurvived}</td>
-                  <td className={l.num}>{r.stagesPlayed}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p style={{ color: 'var(--ash)', fontSize: 13 }}>Ties on stage wins are broken by outright (unshared) stage wins, then rounds survived. Still level means a shared place.</p>
+        <Scoreboard rows={board} myId={myId} />
+        <Text tone="ash" size="sm">
+          Ties on stage wins are broken by outright (unshared) stage wins, then rounds survived. Still level means a shared place.
+        </Text>
       </Section>
 
       <Section title="Prizes" aside="Committed, not paid">
-        {totals.size > 0 && (
-          <div className={l.tableWrap}>
-            <table className={l.table}>
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th className={l.num}>Allocated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...totals.entries()]
-                  .sort((a, b) => b[1].cents - a[1].cents)
-                  .map(([id, t]) => (
-                    <tr key={id} className={id === myId ? l.me : undefined}>
-                      <td>{t.name}</td>
-                      <td className={l.num}>{money(t.cents, currency)}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <details>
-          <summary style={{ cursor: 'pointer', color: 'var(--dust)', fontFamily: 'var(--f-cond)', fontWeight: 600, minHeight: 44, display: 'flex', alignItems: 'center' }}>Every line item ({allocations.length})</summary>
+        <details className={sc.lineItems}>
+          <summary>Every line item ({allocations.length})</summary>
           <div className={l.tableWrap}>
             <table className={l.table}>
               <thead>
@@ -119,7 +85,7 @@ export function FinalBoard({ rows, allocations, currency, myId }: { rows: FinalR
                   <tr key={i}>
                     <td>
                       {a.label}
-                      {a.note ? <span style={{ color: 'var(--ash)' }}> ({a.note})</span> : null}
+                      {a.note ? <span className={sc.dim}> ({a.note})</span> : null}
                     </td>
                     <td>{a.name ?? '—'}</td>
                     <td className={l.num}>{money(a.amountCents, currency)}</td>
@@ -130,7 +96,11 @@ export function FinalBoard({ rows, allocations, currency, myId }: { rows: FinalR
             </table>
           </div>
         </details>
-        {unawarded > 0 && <p style={{ color: 'var(--dust)', fontSize: 14 }}>{money(unawarded, currency)} went unawarded (no eligible winner) and stays with the sponsor.</p>}
+        {unawarded > 0 && (
+          <Text tone="dust" size="sm">
+            {money(unawarded, currency)} went unawarded (no eligible winner) and stays with the sponsor.
+          </Text>
+        )}
         <Note>These are sponsor commitments calculated by the platform. Payment, if any, happens between the sponsor and players outside this app.</Note>
       </Section>
     </>

@@ -1,0 +1,230 @@
+/*
+ * Venue objects. Paper (bill, ticket) and tape (the mark) live here and
+ * nowhere else; everything around them stays concrete and steel.
+ */
+
+/* ------------------------------------------------------------ tape mark */
+
+.tapeLink { display: inline-flex; text-decoration: none; padding: 4px 0; }
+.tape {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.28em 0.6em 0.2em;
+  color: var(--tape-ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.07)),
+    var(--paper-grain),
+    var(--tape);
+  font-family: var(--f-stencil);
+  font-weight: 800;
+  font-size: 1.22rem;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  transform: rotate(-1.6deg);
+  /* torn ends, straight-ish long edges */
+  clip-path: polygon(0 12%, 2% 0, 30% 3%, 62% 0, 98% 2%, 100% 18%, 98.6% 36%, 100% 52%, 98.2% 70%, 100% 88%, 97% 100%, 58% 97%, 24% 100%, 3% 98%, 1% 82%, 0 64%, 1.6% 44%, 0 28%);
+}
+.tapeXl { font-size: clamp(3rem, 16vw, 5rem); padding: 0.22em 0.42em 0.14em; transform: rotate(-2.4deg); }
+
+/* ------------------------------------------------------------ bill (fight-night poster) */
+
+.bill {
+  position: relative;
+  display: grid;
+  gap: var(--s-3);
+  margin: 0 2px;
+  padding: var(--s-4) var(--s-5) calc(var(--s-5) + 8px);
+  color: var(--paper-ink);
+  background:
+    /* a fold across the sheet */
+    linear-gradient(180deg, transparent 43%, rgba(0, 0, 0, 0.07) 43.3%, rgba(255, 255, 255, 0.32) 43.7%, transparent 44.4%),
+    /* edges darkened by weather and paste */
+    radial-gradient(140% 130% at 35% 15%, transparent 52%, rgba(86, 64, 32, 0.24) 100%),
+    var(--paper-grain),
+    var(--paper);
+  transform: rotate(-0.6deg);
+  clip-path: polygon(0 0, 100% 0.6%, 99.6% calc(100% - 9px), 96% 100%, 91% calc(100% - 5px), 86% calc(100% - 1px), 80% calc(100% - 7px), 73% calc(100% - 2px), 67% calc(100% - 8px), 60% calc(100% - 3px), 52% calc(100% - 6px), 45% 100%, 38% calc(100% - 7px), 31% calc(100% - 2px), 24% calc(100% - 8px), 17% calc(100% - 1px), 10% calc(100% - 6px), 4% calc(100% - 2px), 0.4% calc(100% - 7px));
+}
+.billCompact { padding: var(--s-3) var(--s-4) calc(var(--s-4) + 8px); gap: var(--s-2); }
+.billTop { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); min-height: 26px; }
+.billPresents { font-family: var(--f-cond); font-weight: 700; font-size: var(--t-md); color: var(--paper-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.billStamp {
+  flex: none;
+  padding: 3px 8px 1px;
+  border: 2px solid currentColor;
+  color: var(--paper-red);
+  font-family: var(--f-stencil);
+  font-weight: 900;
+  font-size: 0.95rem;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(4deg);
+  opacity: 0.9;
+}
+.billTitle {
+  font-family: var(--f-display);
+  font-weight: 900;
+  line-height: 0.84;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+.billTitle[data-fit='xl'] { font-size: clamp(3.2rem, 16vw, 5.4rem); }
+.billTitle[data-fit='lg'] { font-size: clamp(2.5rem, 11.5vw, 4.2rem); }
+.billTitle[data-fit='md'] { font-size: clamp(2rem, 9vw, 3.2rem); }
+.billTitle[data-fit='sm'] { font-size: clamp(1.7rem, 7.4vw, 2.6rem); line-height: 0.9; }
+.billCompact .billTitle[data-fit='xl'] { font-size: clamp(2.6rem, 12vw, 3.8rem); }
+.billCompact .billTitle[data-fit='lg'] { font-size: clamp(2.1rem, 9.5vw, 3.2rem); }
+
+.billFacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); margin: 0; padding-top: var(--s-3); border-top: 3px solid var(--paper-ink); }
+.billFacts > div { display: grid; align-content: start; gap: 2px; padding-right: var(--s-2); min-width: 0; }
+.billFacts > div + div { border-left: 1px solid rgba(23, 20, 15, 0.28); padding-left: var(--s-3); }
+.billFacts dd { order: -1; margin: 0; font-family: var(--f-display); font-weight: 800; font-size: var(--t-2xl); line-height: 0.95; white-space: nowrap; }
+.billFacts dt { font-family: var(--f-cond); font-weight: 600; font-size: var(--t-sm); color: var(--paper-mute); }
+
+/* ------------------------------------------------------------ ticket stub (invite) */
+
+.ticket {
+  --stub: 96px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr var(--stub);
+  color: var(--paper-ink);
+  background:
+    radial-gradient(130% 160% at 20% 0%, transparent 60%, rgba(86, 64, 32, 0.18) 100%),
+    var(--paper-grain),
+    var(--paper);
+  /* the two half-moon notches where the stub tears off */
+  -webkit-mask:
+    radial-gradient(circle 9px at calc(100% - var(--stub)) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 9px at calc(100% - var(--stub)) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle 9px at calc(100% - var(--stub)) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 9px at calc(100% - var(--stub)) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat;
+}
+.ticketMain { display: grid; gap: 4px; padding: var(--s-3) var(--s-4) var(--s-4); min-width: 0; }
+.ticketLabel { font-family: var(--f-cond); font-weight: 700; font-size: var(--t-sm); color: var(--paper-mute); }
+.ticketCode {
+  font-family: var(--f-code);
+  font-weight: 600;
+  font-size: clamp(1.45rem, 7.6vw, 2.1rem);
+  letter-spacing: 0.14em;
+  line-height: 1.05;
+  user-select: all;
+  -webkit-user-select: all;
+  white-space: nowrap;
+}
+.ticketLine { font-size: var(--t-sm); color: var(--paper-mute); }
+.ticketStub {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  padding: 0 var(--s-2);
+  border-left: 2px dashed rgba(23, 20, 15, 0.38);
+  text-align: center;
+}
+.ticketStub b { font-family: var(--f-display); font-weight: 800; font-size: var(--t-3xl); line-height: 0.9; }
+.ticketStub span { font-family: var(--f-cond); font-weight: 600; font-size: var(--t-xs); color: var(--paper-mute); line-height: 1.15; }
+.ticket[data-void] .ticketMain, .ticket[data-void] .ticketStub { opacity: 0.55; }
+.ticketVoid {
+  position: absolute;
+  left: 46%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  padding: 2px 12px 0;
+  border: 3px solid currentColor;
+  color: var(--paper-red);
+  font-family: var(--f-stencil);
+  font-weight: 900;
+  font-size: var(--t-3xl);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------ room count */
+
+.count { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
+.countNum {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-size: clamp(4.4rem, 23vw, 6.4rem);
+  line-height: 0.76;
+  color: var(--chalk);
+  font-variant-numeric: tabular-nums;
+  animation: slam 420ms var(--ease-slam) both;
+}
+.countText { display: grid; gap: 4px; min-width: 0; }
+.countText b { display: flex; align-items: center; gap: var(--s-2); font-family: var(--f-display); font-weight: 800; font-size: var(--t-2xl); line-height: 0.95; text-transform: uppercase; }
+.countText > span { font-family: var(--f-cond); font-weight: 600; color: var(--dust); }
+.countLamp { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--sodium); box-shadow: 0 0 10px var(--sodium); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes slam { from { transform: scale(1.28); opacity: 0.15; } }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+/* ------------------------------------------------------------ player tags */
+
+.tags { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 6px; }
+.tag {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 10px;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 10px 8px 8px;
+  background: var(--char);
+  border: 1px solid var(--steel);
+  box-shadow: var(--edge);
+}
+.tag[data-host] { border-left: 3px solid var(--sodium); padding-left: 6px; }
+.tag[data-me] { border-color: var(--fluoro-dim); }
+.tag[data-host][data-me] { border-left-color: var(--sodium); }
+.tag[data-left] { opacity: 0.42; }
+.tagMark { width: 34px; height: 34px; display: grid; place-items: center; background: var(--slab-hi); border: 1px solid var(--steel); font-family: var(--f-display); font-weight: 800; font-size: 1rem; }
+.tag[data-host] .tagMark { background: var(--sodium); border-color: var(--sodium); color: var(--sodium-ink); }
+.tagText { display: grid; min-width: 0; line-height: 1.2; }
+.tagText b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tagText span { font-family: var(--f-cond); font-weight: 600; font-size: var(--t-sm); color: var(--ash); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag[data-host] .tagText span { color: var(--sodium); }
+.tag[data-me]:not([data-host]) .tagText span { color: var(--fluoro); }
+.lamp { width: 9px; height: 9px; border-radius: 50%; background: var(--grit); }
+.lamp[data-on='true'] { background: var(--go); box-shadow: 0 0 8px var(--go); }
+
+/* ------------------------------------------------------------ scoreboard */
+
+.board { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--steel); }
+.boardRow { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-1) var(--s-3) 0; border-bottom: 1px solid var(--steel); }
+.boardRow[data-me] { background: linear-gradient(90deg, rgba(245, 162, 58, 0.1), transparent 75%); }
+.boardRank { font-family: var(--f-display); font-weight: 900; font-size: var(--t-4xl); line-height: 0.8; text-align: center; color: var(--grit); }
+.boardRow[data-rank='1'] .boardRank { color: var(--sodium); }
+.boardRow[data-rank='2'] .boardRank, .boardRow[data-rank='3'] .boardRank { color: var(--dust); }
+.boardWho { display: grid; gap: 3px; min-width: 0; }
+.boardWho b { font-family: var(--f-display); font-weight: 800; font-size: var(--t-xl); line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.boardWho span { font-size: var(--t-sm); color: var(--ash); }
+.boardWho .boardPrize { font-family: var(--f-cond); font-weight: 700; font-size: var(--t-md); color: var(--sodium); }
+.boardWins { display: grid; justify-items: end; }
+.boardWins b { font-family: var(--f-display); font-weight: 800; font-size: var(--t-3xl); line-height: 0.9; }
+.boardWins span { font-family: var(--f-cond); font-weight: 600; font-size: var(--t-xs); color: var(--ash); }
+
+/* ------------------------------------------------------------ member card */
+
+.member {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-4) 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 40%), var(--char);
+  border: 1px solid var(--steel);
+  box-shadow: var(--edge);
+  overflow: hidden;
+}
+.memberTop { display: flex; justify-content: space-between; align-items: start; gap: var(--s-3); }
+.memberId { display: grid; gap: 6px; min-width: 0; }
+.memberName { font-family: var(--f-display); font-weight: 900; font-size: clamp(2.2rem, 11vw, 3rem); line-height: 0.88; text-transform: uppercase; overflow-wrap: anywhere; }
+.memberSub { font-family: var(--f-cond); font-weight: 600; font-size: var(--t-sm); color: var(--ash); }
+.memberStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0 calc(var(--s-4) * -1); background: var(--steel); border-top: 1px solid var(--steel); }
+.memberStats > div { display: grid; gap: 2px; padding: var(--s-3) var(--s-2) var(--s-3) var(--s-3); min-width: 0; background: var(--char); }
+.memberStats dt { order: 1; font-family: var(--f-cond); font-weight: 600; font-size: var(--t-xs); line-height: 1.15; color: var(--ash); }
+.memberStats dd { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: var(--t-3xl); line-height: 0.95; }

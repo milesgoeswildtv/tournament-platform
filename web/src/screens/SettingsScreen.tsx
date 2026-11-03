@@ -7,7 +7,8 @@ import { navigate } from '../lib/router';
 import { toast } from '../lib/toast';
 import { inTelegram } from '../lib/telegram';
 import { Button, Field, Segmented, TextInput, Toggle, fieldStyles } from '../ui/controls';
-import { Chip, Page, PageHead, Section, Spec } from '../ui/layout';
+import { Chip, Page, PageHead, Section, Spec, Stack, Text } from '../ui/layout';
+import sc from './screens.module.css';
 
 export function SettingsScreen() {
   const session = useSession();
@@ -45,7 +46,7 @@ export function SettingsScreen() {
       <PageHead title="Settings" />
 
       <Section title="Profile">
-        <form onSubmit={save} style={{ display: 'grid', gap: 12 }}>
+        <form onSubmit={save} className={sc.form}>
           <TextInput label="Display name" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} error={err} hint="2–24 characters. Shown in lobbies, chat and results." />
           <div>
             <Button type="submit" variant="secondary" busy={busy} disabled={name.trim() === session.user.name || name.trim().length < 2}>
@@ -99,31 +100,35 @@ export function SettingsScreen() {
 
       <Section title="Telegram">
         {tg ? (
-          <div style={{ display: 'grid', gap: 8, justifyItems: 'start' }}>
+          <Stack gap={2}>
             <Chip tone={tg.linked ? 'go' : tg.configured ? 'info' : 'muted'}>{tg.linked ? 'Linked' : tg.configured ? 'Not linked' : 'Not set up on this server'}</Chip>
-            <p style={{ color: 'var(--dust)' }}>
+            <Text tone="dust">
               {tg.linked
                 ? 'Countdown alerts and results also arrive from the bot.'
                 : tg.configured
                   ? `Open the app from ${tg.bot ? `@${tg.bot}` : 'the bot'} in Telegram while signed in here to link your account.`
                   : 'The operator hasn’t connected a Telegram bot yet. Everything works in the browser.'}
-            </p>
+            </Text>
             {tg.configured && tg.bot && !tg.linked && !inTelegram() && (
               <Button icon="telegram" onClick={() => window.open(`https://t.me/${tg.bot}?start=link`, '_blank', 'noopener')}>
                 Open the bot
               </Button>
             )}
-          </div>
+          </Stack>
         ) : null}
       </Section>
 
       <Section title="Account">
-        <div style={{ display: 'grid', gap: 8 }}>
-          {session.user.isAdmin && <Button to="/admin" icon="log">Admin: all tournaments</Button>}
+        <Stack gap={2}>
+          {session.user.isAdmin && (
+            <Button to="/admin" icon="log">
+              Admin: all tournaments
+            </Button>
+          )}
           <Button variant="danger" icon="exit" onClick={signOut}>
             Sign out
           </Button>
-        </div>
+        </Stack>
       </Section>
     </Page>
   );

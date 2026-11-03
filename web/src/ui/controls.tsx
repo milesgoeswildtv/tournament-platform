@@ -84,9 +84,9 @@ export function Field({ label, hint, error, children, htmlFor }: { label: ReactN
   );
 }
 
-export function TextInput({ label, hint, error, className, code, prefix, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label?: ReactNode; hint?: ReactNode; error?: string | null; code?: boolean; prefix?: string }) {
+export function TextInput({ label, hint, error, className, code, mono, prefix, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label?: ReactNode; hint?: ReactNode; error?: string | null; code?: boolean; mono?: boolean; prefix?: string }) {
   const id = useId();
-  const input = <input id={id} className={cx(s.input, code && s.codeInput, className)} aria-invalid={error ? true : undefined} {...rest} />;
+  const input = <input id={id} className={cx(s.input, code && s.codeInput, mono && s.monoInput, className)} aria-invalid={error ? true : undefined} {...rest} />;
   const wrapped = prefix ? (
     <div className={s.prefixWrap}>
       <span className={s.prefix}>{prefix}</span>

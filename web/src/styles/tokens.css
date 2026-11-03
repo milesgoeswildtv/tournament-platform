@@ -1,9 +1,17 @@
 /*
  * Design tokens. Every color, size and duration in the app comes from here.
  *
+ * The venue: an underground tournament in a disused industrial space.
+ *
  * Light is state: sodium (warm work light) = live / your move,
  * fluoro (cold tube light) = information / waiting, go = still standing,
- * stop = out. Everything else is concrete and steel.
+ * stop = out.
+ *
+ * Four materials, nothing else:
+ *   concrete  the ground everything sits on (body background)
+ *   steel     controls and panels (char / slab / steel)
+ *   paper     things you hold: the event bill, tickets, cards, letter tiles
+ *   tape      the brand placeholder only — the name is literally taped over
  */
 @font-face { font-family: 'Big Shoulders Display'; src: url('/fonts/big-shoulders-display.woff') format('woff'); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: 'Big Shoulders Stencil'; src: url('/fonts/big-shoulders-stencil.woff') format('woff'); font-weight: 100 900; font-display: swap; }
@@ -29,7 +37,7 @@
   /* ink */
   --chalk: #ece7db;
   --dust: #a39e92;
-  --ash: #75716a;
+  --ash: #8a857c; /* ≥4.5:1 on char and slab for small text */
 
   /* light */
   --sodium: #f5a23a;
@@ -41,6 +49,32 @@
   --go-dim: #2b4a27;
   --stop: #ee4b3b;
   --stop-dim: #4f1a15;
+
+  /* paper stock: bills, tickets, dealer cards, letter tiles */
+  --paper: #e4dcc8;
+  --paper-hi: #ece5d3;
+  --paper-shade: #c9bfa7;
+  --paper-ink: #17140f;
+  --paper-mute: #5a5446;
+  --paper-red: #b3352a; /* rubber-stamp ink on paper */
+
+  /* gaffer tape: the NAME TBD placeholder mark */
+  --tape: #d3ccb9;
+  --tape-ink: #1b1813;
+
+  /* each game's own light within the shared palette */
+  --g-guess-color: #efc93c;
+  --g-zero-hour: #bde2e4;
+  --g-high-low: #86d17a;
+  --g-decode: #ece7db;
+  --g-suited-up: #ee4b3b;
+  --g-pressure-cooker: #f5a23a;
+  --g-speedrun: #6fa8ff;
+
+  /* textures (tiny SVG turbulence tiles) */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .27 0 0 0 0 .2 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");
+  --scuff: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .04' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 .06 -.012'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23s)'/%3E%3C/svg%3E");
 
   /* the five cans (Guess the Color) */
   --can-red: #e04a3a;
@@ -97,6 +131,7 @@
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-slam: cubic-bezier(0.3, 1.6, 0.5, 1);
 
+  --header-h: 56px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --tabbar-h: 64px;

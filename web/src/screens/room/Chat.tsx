@@ -32,7 +32,7 @@ export function ChatPanel({ view, onSend }: { view: RoomView; onSend: (text: str
           ) : (
             <div key={m.id} className={s.msg} data-me={m.playerId === myId}>
               <b>
-                {m.name} <span style={{ color: 'var(--ash)', fontWeight: 600 }}>{clockTime(m.at)}</span>
+                {m.name} <time>{clockTime(m.at)}</time>
               </b>
               <p>{m.text}</p>
             </div>

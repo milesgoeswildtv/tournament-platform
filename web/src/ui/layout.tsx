@@ -3,6 +3,36 @@ import { Link } from '../lib/router';
 import { cx } from './controls';
 import s from './layout.module.css';
 
+type Gap = 1 | 2 | 3 | 4 | 6 | 8;
+
+/** Vertical rhythm without one-off margins: children spaced on the 4px grid. */
+export function Stack({ gap = 3, row, center, push, as: Tag = 'div', className, children }: { gap?: Gap; row?: boolean; center?: boolean; push?: boolean; as?: 'div' | 'section' | 'footer' | 'header'; className?: string; children: ReactNode }) {
+  return <Tag className={cx(row ? s.stackRow : s.stack, s[`g${gap}`], center && s.stackCenter, push && s.stackPush, className)}>{children}</Tag>;
+}
+
+export type Ink = 'chalk' | 'dust' | 'ash' | 'sodium' | 'fluoro' | 'go' | 'stop';
+
+/** Body copy in one of the system's sizes and inks. */
+export function Text({ tone = 'chalk', size = 'md', cond, center, as: Tag = 'p', role, className, children }: { tone?: Ink; size?: 'xs' | 'sm' | 'md' | 'lg'; cond?: boolean; center?: boolean; as?: 'p' | 'span' | 'div'; role?: string; className?: string; children: ReactNode }) {
+  return (
+    <Tag role={role} className={cx(s.text, s[`t_${size}`], s[`c_${tone}`], cond && s.cond, center && s.center, className)}>
+      {children}
+    </Tag>
+  );
+}
+
+/** Full-screen message for gates and closed rooms: what happened, then where to go. */
+export function StatusScreen({ title, chip, children, actions }: { title: ReactNode; chip?: ReactNode; children?: ReactNode; actions?: ReactNode }) {
+  return (
+    <main className={s.status}>
+      {chip}
+      <h1 className={s.statusTitle}>{title}</h1>
+      {children}
+      {actions && <div className={s.statusActions}>{actions}</div>}
+    </main>
+  );
+}
+
 export function Page({ children, wide }: { children: ReactNode; wide?: boolean }) {
   return <main className={cx(s.page, wide && s.wide)}>{children}</main>;
 }
@@ -104,7 +134,7 @@ export function Who({ name, tag, small, to, children }: { name: string; tag?: st
     </>
   );
   return to ? (
-    <Link to={to} className={s.who} style={{ textDecoration: 'none' }}>
+    <Link to={to} className={s.who}>
       {inner}
     </Link>
   ) : (
@@ -135,7 +165,7 @@ export function Spec({ items }: { items: [ReactNode, ReactNode][] }) {
   return (
     <dl className={s.spec}>
       {items.map(([k, v], i) => (
-        <div key={i} style={{ display: 'contents' }}>
+        <div key={i} className={s.specRow}>
           <dt>{k}</dt>
           <dd>{v}</dd>
         </div>

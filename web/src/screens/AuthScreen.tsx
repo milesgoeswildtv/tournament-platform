@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { ApiError, post, setSession, useSession, type User } from '../lib/api';
 import { navigate, useLocation } from '../lib/router';
 import { Button, Segmented, TextInput } from '../ui/controls';
+import { Text } from '../ui/layout';
+import { TapeMark } from '../ui/venue';
 import s from './screens.module.css';
 
 export function AuthScreen() {
@@ -45,9 +47,20 @@ export function AuthScreen() {
     <main className={s.auth}>
       <div className={s.authHero}>
         <h1 className={s.authMark}>
-          NAME<span>TBD</span>
+          <TapeMark size="xl" />
         </h1>
         <p className={s.authLede}>Sponsored elimination tournaments. Ten to twenty-five stages, one game each. Survive the stage, take the stage.</p>
+        <ul className={s.authFacts} aria-label="How it works">
+          <li>
+            <b>Sponsors</b> put up the prizes and run the room.
+          </li>
+          <li>
+            <b>Players</b> join with an invite and play every stage live.
+          </li>
+          <li>
+            <b>The server</b> keeps the clock and calls every result.
+          </li>
+        </ul>
       </div>
       <form className={s.authForm} onSubmit={submit} noValidate>
         <Segmented
@@ -87,7 +100,11 @@ export function AuthScreen() {
           error={fieldErr('password')}
           required
         />
-        {err && !err.field && <p role="alert" style={{ color: 'var(--stop)' }}>{err.message}</p>}
+        {err && !err.field && (
+          <Text tone="stop" role="alert">
+            {err.message}
+          </Text>
+        )}
         <Button type="submit" variant="primary" size="lg" block busy={busy} disabled={!handle || password.length < (mode === 'signup' ? 8 : 1)}>
           {mode === 'signup' ? 'Create account' : 'Sign in'}
         </Button>

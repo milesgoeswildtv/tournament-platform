@@ -14,14 +14,15 @@ import {
   type SpecialAwardType,
   type TournamentConfig,
 } from '@shared/client';
-import { ApiError, get, patch, post } from '../lib/api';
+import { ApiError, get, patch, post, useSession } from '../lib/api';
 import { navigate } from '../lib/router';
 import { STRUCTURE, money } from '../lib/format';
 import { toast } from '../lib/toast';
 import { Button, Field, Segmented, Stepper, TextInput, Toggle, fieldStyles } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { GameMark } from '../ui/GameMark';
-import { Loading, Note, Page, PageHead, Plate, Section, Spec } from '../ui/layout';
+import { Loading, Note, Page, PageHead, Plate, Section, Spec, Stack, Text } from '../ui/layout';
+import { Bill } from '../ui/venue';
 import s from './screens.module.css';
 
 const STEPS = ['Basics', 'Prizes', 'Stages', 'Timing', 'Review'] as const;
@@ -70,6 +71,7 @@ function randomLineup(n: number, pool: readonly GameId[]): GameId[] {
 }
 
 export function CreateScreen({ editId }: { editId?: string }) {
+  const session = useSession();
   const [cfg, setCfg] = useState<TournamentConfig>(() => ({ ...defaultConfig(), title: '' }));
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -171,7 +173,7 @@ export function CreateScreen({ editId }: { editId?: string }) {
               <div key={i} className={`${s.stepPip} ${i <= step ? s.stepPipOn : ''}`} />
             ))}
           </div>
-          <p className={s.stepLabel} style={{ marginTop: 8 }}>
+          <p className={s.stepLabel}>
             Step {step + 1} of {STEPS.length}: {STEPS[step]}
           </p>
         </div>
@@ -237,7 +239,7 @@ export function CreateScreen({ editId }: { editId?: string }) {
               </Field>
             )}
             <Section title="Special awards" aside={`${cfg.specialAwards.length} of ${LIMITS.maxSpecialAwards}`}>
-              <div style={{ display: 'grid', gap: 8 }}>
+              <Stack gap={2}>
                 {cfg.specialAwards.map((a, i) => (
                   <div className={s.award} key={a.id}>
                     <div className={s.awardHead}>
@@ -269,7 +271,9 @@ export function CreateScreen({ editId }: { editId?: string }) {
                         <Stepper label="award stage" value={a.stage ?? 1} min={1} max={cfg.stages} onChange={(v) => set((c) => void (c.specialAwards[i].stage = v))} />
                       </Field>
                     )}
-                    <p style={{ fontSize: 14, color: 'var(--dust)' }}>{SPECIAL_AWARD_TYPES[a.type].describe(a.stage)} Ties split the amount.</p>
+                    <Text tone="dust" size="sm">
+                      {SPECIAL_AWARD_TYPES[a.type].describe(a.stage)} Ties split the amount.
+                    </Text>
                     {errFor(`specialAwards.${i}`) && <p className={fieldStyles.error}>{errFor(`specialAwards.${i}`)}</p>}
                   </div>
                 ))}
@@ -282,7 +286,7 @@ export function CreateScreen({ editId }: { editId?: string }) {
                   </Button>
                 )}
                 <Note>Award criteria are stored with the tournament and can’t change once the countdown starts.</Note>
-              </div>
+              </Stack>
             </Section>
           </div>
         )}
@@ -318,10 +322,9 @@ export function CreateScreen({ editId }: { editId?: string }) {
                     return (
                       <button key={g} type="button" role="checkbox" aria-checked={on} className={s.poolItem} onClick={() => set((c) => void (c.games.pool = on ? c.games.pool.filter((x) => x !== g) : [...c.games.pool, g]))}>
                         <GameMark id={g} size={32} />
-                        <span>
-                          <b style={{ fontWeight: 600 }}>{GAME_META[g].name}</b>
-                          <br />
-                          <span style={{ fontSize: 13, color: 'var(--dust)' }}>{GAME_META[g].tagline}</span>
+                        <span className={s.poolText}>
+                          <b>{GAME_META[g].name}</b>
+                          <span>{GAME_META[g].tagline}</span>
                         </span>
                         <span className={s.checkBox}>{on && <Icon name="check" size={16} />}</span>
                       </button>
@@ -361,7 +364,7 @@ export function CreateScreen({ editId }: { editId?: string }) {
 
         {step === 3 && (
           <div className={s.formGrid}>
-            <p style={{ color: 'var(--dust)' }}>Every stage draws its own round timer between these two values. The server keeps time; nobody’s connection can stretch it.</p>
+            <Text tone="dust">Every stage draws its own round timer between these two values. The server keeps time; nobody’s connection can stretch it.</Text>
             <div className={s.two}>
               <Field label="Shortest" error={errFor('timer.minSeconds')}>
                 <Stepper label="minimum seconds" unit="s" value={cfg.timer.minSeconds} min={LIMITS.minTimer} max={LIMITS.maxTimer} onChange={(v) => set((c) => {
@@ -387,9 +390,24 @@ export function CreateScreen({ editId }: { editId?: string }) {
 
         {step === 4 && (
           <div className={s.formGrid}>
+            <Stack gap={2}>
+              <Bill
+                compact
+                presents={`${session?.user.name ?? 'You'} presents`}
+                title={normalized.title || 'Untitled'}
+                stamp="Draft"
+                facts={[
+                  { label: 'On the line', value: money(total, normalized.currency) },
+                  { label: 'Stages', value: normalized.stages },
+                  { label: 'Payout', value: STRUCTURE[normalized.payout.structure].short },
+                ]}
+              />
+              <Text tone="ash" size="sm">
+                This is the poster your players see on the invite and in the lobby.
+              </Text>
+            </Stack>
             <Plate>
               <div className={s.reviewBlock}>
-                <h2 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-2xl)', textTransform: 'uppercase' }}>{normalized.title || 'Untitled'}</h2>
                 <Spec
                   items={[
                     ['Visibility', normalized.entry.visibility === 'PUBLIC' ? 'Listed publicly' : 'Invite only'],
@@ -429,7 +447,7 @@ export function CreateScreen({ editId }: { editId?: string }) {
               <ul className={s.errorList}>
                 {errors.map((e) => (
                   <li key={e.field + e.message}>
-                    <button type="button" style={{ background: 'none', border: 0, color: 'inherit', textDecoration: 'underline', padding: 0 }} onClick={() => setStep(STEP_OF(e.field))}>
+                    <button type="button" className={s.linkBtn} onClick={() => setStep(STEP_OF(e.field))}>
                       {e.message}
                     </button>
                   </li>

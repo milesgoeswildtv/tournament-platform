@@ -3,7 +3,13 @@
  * screenshots to screens/ (git-ignored). Uses the local dev server and
  * Playwright's bundled Chromium.
  *
- *   node --experimental-sqlite --import tsx scripts/shots.ts
+ *   npm run shots                         # 390×844 phone
+ *   npm run shots -- --size=se,max,desk   # 375×667, 430×932, 1280×860
+ *   npm run shots -- hub lobby            # only some screens
+ *
+ * Each screen is saved twice: <size>-<name>.png is exactly what fits on the
+ * screen (fixed bars where they really sit), <size>-<name>-full.png is the
+ * whole scroll.
  */
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -30,7 +36,14 @@ const t = (await host.api('POST', '/api/tournaments', { config: cfg })).data;
 for (const p of pals) await p.api('POST', '/api/join', { code: t.invite.code });
 
 const browser = await chromium.launch();
-const sizes = process.argv.includes('--desktop') ? [{ name: 'desk', width: 1280, height: 860, mobile: false }] : [{ name: 'phone', width: 390, height: 844, mobile: true }];
+const SIZES = {
+  se: { name: 'se', width: 375, height: 667, mobile: true },
+  phone: { name: 'phone', width: 390, height: 844, mobile: true },
+  max: { name: 'max', width: 430, height: 932, mobile: true },
+  desk: { name: 'desk', width: 1280, height: 860, mobile: false },
+};
+const sizeArg = process.argv.find((a) => a.startsWith('--size='))?.slice(7) ?? (process.argv.includes('--desktop') ? 'desk' : 'phone');
+const sizes = sizeArg.split(',').map((k) => SIZES[k as keyof typeof SIZES]).filter(Boolean);
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 
 const pages: [string, string][] = [
@@ -40,6 +53,7 @@ const pages: [string, string][] = [
   ['sponsor', '/sponsor'],
   ['create-1', '/sponsor/new'],
   ['lobby', `/t/${t.id}`],
+  ['results-missing', '/t/nope'],
   ['library', '/games'],
   ['game-suited', '/games/suited-up'],
   ['ranks', '/ranks'],
@@ -63,7 +77,18 @@ for (const sz of sizes) {
     if (only.length && !only.includes(name)) continue;
     await page.goto(`${server.url}${path}`);
     await page.waitForTimeout(700);
-    await page.screenshot({ path: `${OUT}${sz.name}-${name}.png`, fullPage: true });
+    await page.screenshot({ path: `${OUT}${sz.name}-${name}.png` });
+    await page.screenshot({ path: `${OUT}${sz.name}-${name}-full.png`, fullPage: true });
+    const wide = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (wide > 0) console.log(`horizontal overflow on ${sz.name}-${name}: ${wide}px`);
+  }
+  if (!only.length || only.includes('lobby-player')) {
+    await page.evaluate(([token, user]) => localStorage.setItem('tp.session.v1', JSON.stringify({ token, user })), [pals[0].token, pals[0].user] as const);
+    await page.goto(`${server.url}/t/${t.id}`);
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${OUT}${sz.name}-lobby-player.png` });
+    await page.screenshot({ path: `${OUT}${sz.name}-lobby-player-full.png`, fullPage: true });
+    await page.evaluate(([token, user]) => localStorage.setItem('tp.session.v1', JSON.stringify({ token, user })), [host.token, host.user] as const);
   }
   if (errors.length) console.log(`console errors (${sz.name}):\n  ${[...new Set(errors)].join('\n  ')}`);
   await ctx.close();

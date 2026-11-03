@@ -33,10 +33,20 @@ export const STATUS: Record<TournamentSummary['status'], { label: string; tone: 
   ABANDONED: { label: 'Expired', tone: 'muted' },
 };
 
-export const STRUCTURE: Record<PayoutStructure, { label: string; describe: string }> = {
-  PER_STAGE: { label: 'Per stage winner', describe: 'Every stage pays its winner.' },
-  MOST_WINS: { label: 'Most stage wins', describe: 'One final award for the player with the most stage wins.' },
-  HYBRID: { label: 'Hybrid', describe: 'Every stage pays its winner, plus a final award for most stage wins.' },
+/** The rubber stamp on a tournament's poster. */
+export const BILL_STAMP: Record<TournamentSummary['status'], string> = {
+  LOBBY: 'Lobby open',
+  COUNTDOWN: 'Starting',
+  RUNNING: 'Live',
+  FINISHED: 'Final',
+  CANCELED: 'Canceled',
+  ABANDONED: 'Expired',
+};
+
+export const STRUCTURE: Record<PayoutStructure, { label: string; short: string; describe: string }> = {
+  PER_STAGE: { label: 'Per stage winner', short: 'Per stage', describe: 'Every stage pays its winner.' },
+  MOST_WINS: { label: 'Most stage wins', short: 'Most wins', describe: 'One final award for the player with the most stage wins.' },
+  HYBRID: { label: 'Hybrid', short: 'Hybrid', describe: 'Every stage pays its winner, plus a final award for most stage wins.' },
 };
 
 export const gameName = (id: GameId | null) => (id ? GAME_META[id].name : 'Hidden until it starts');

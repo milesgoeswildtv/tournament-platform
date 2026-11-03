@@ -54,7 +54,7 @@ export function Spectating({ me }: { me: MeView | null }) {
   else if (me?.status === 'host') text = 'You’re hosting. Watching the floor.';
   else if (me?.status === 'left') text = 'You forfeited this tournament.';
   return (
-    <div className={s.locked} style={{ borderColor: 'var(--steel)', color: 'var(--dust)' }} role="status">
+    <div className={`${s.locked} ${s.watching}`} role="status">
       <Icon name="eye" size={20} />
       <span>{text}</span>
     </div>

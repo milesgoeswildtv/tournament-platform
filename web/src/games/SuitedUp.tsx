@@ -14,7 +14,7 @@ export function SuitRing({ size = 18 }: { size?: number }) {
   return (
     <div className={s.ring} aria-label="Spade beats diamond, diamond beats club, club beats heart, heart beats spade">
       {order.map((x, i) => (
-        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span key={i} className={s.ringStep}>
           <SuitGlyph suit={x} size={size} />
           {i < order.length - 1 && <span aria-hidden>beats</span>}
         </span>

@@ -21,7 +21,7 @@ export function HighLowPlay({ mine, me, canAct, pending, act }: PlayProps) {
             <div className={s.ticketFoot}>{hand.rerolled ? 'Reroll used. You play this one.' : 'Keep it or reroll once.'}</div>
           </div>
         ) : (
-          <p className={s.big} style={{ textAlign: 'center', color: 'var(--ash)' }}>No hand this round</p>
+          <p className={`${s.big} ${s.muted}`}>No hand this round</p>
         )}
         <p className={s.hint}>Call whether your number lands above or below the house number (1–100). Matching it is out.</p>
       </div>
@@ -67,7 +67,7 @@ export function HighLowReveal({ reveal, myId }: RevealProps) {
       <div className={s.vs}>
         <div>
           <div className={s.vsLabel}>House</div>
-          <div className={s.vsNum} style={{ color: 'var(--sodium)' }}>{r.comparison}</div>
+          <div className={`${s.vsNum} ${s.inSodium}`}>{r.comparison}</div>
         </div>
         <div className={s.vsLabel}>vs</div>
         <div>

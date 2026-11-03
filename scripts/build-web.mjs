@@ -9,6 +9,7 @@
  * the browser must only ever see rules text.
  */
 import * as esbuild from 'esbuild';
+import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
@@ -16,6 +17,9 @@ import { join } from 'node:path';
 const root = new URL('..', import.meta.url).pathname;
 const out = join(root, 'web/dist');
 const dev = process.argv.includes('--dev');
+
+// Design-system guard first: undefined module classes, inline styles, raw colours.
+execFileSync(process.execPath, [new URL('./check-css.mjs', import.meta.url).pathname], { stdio: 'inherit' });
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });

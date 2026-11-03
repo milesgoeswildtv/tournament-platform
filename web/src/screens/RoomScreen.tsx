@@ -7,7 +7,9 @@ import { useLoad } from '../lib/useLoad';
 import { audio } from '../lib/audio';
 import { toast } from '../lib/toast';
 import { Button, IconButton } from '../ui/controls';
-import { Chip, Loading, Who } from '../ui/layout';
+import { Chip, Loading, Stack, StatusScreen, Text, Who } from '../ui/layout';
+import { Bill } from '../ui/venue';
+import { BILL_STAMP, money, prizeLine } from '../lib/format';
 import { Sheet } from '../ui/shell';
 import { ChatPanel } from './room/Chat';
 import { Lobby } from './room/Lobby';
@@ -21,16 +23,21 @@ export function RoomScreen({ id }: { id: string }) {
   if (gate.loading && !gate.data) return <Loading label="Opening the room" />;
   if (gate.error) {
     return (
-      <div className={s.gate}>
-        <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-3xl)', textTransform: 'uppercase' }}>{gate.error.status === 404 ? 'No such tournament' : 'Invite only'}</h1>
-        <p style={{ color: 'var(--dust)' }}>{gate.error.message}</p>
-        <Button to="/join" variant="primary">
-          Enter an invite code
-        </Button>
-        <Button to="/" variant="ghost">
-          Back to the hub
-        </Button>
-      </div>
+      <StatusScreen
+        title={gate.error.status === 404 ? 'No such tournament' : 'Invite only'}
+        actions={
+          <>
+            <Button to="/join" variant="primary" block>
+              Enter an invite code
+            </Button>
+            <Button to="/" variant="ghost" block>
+              Back to the hub
+            </Button>
+          </>
+        }
+      >
+        <Text tone="dust">{gate.error.status === 404 ? 'This link doesn’t point to a tournament. Check it with whoever sent it.' : gate.error.message}</Text>
+      </StatusScreen>
     );
   }
   const g = gate.data!;
@@ -46,18 +53,27 @@ export function RoomScreen({ id }: { id: string }) {
         setJoining(false);
       }
     };
+    const t = g.tournament;
     return (
-      <div className={s.gate}>
-        <Chip tone="info">Public tournament</Chip>
-        <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-4xl)', textTransform: 'uppercase', lineHeight: 0.9 }}>{g.tournament.title}</h1>
-        <p style={{ color: 'var(--dust)' }}>Hosted by {g.tournament.sponsor.name}. {g.tournament.players} of {g.tournament.maxPlayers} players.</p>
-        <Button variant="primary" size="lg" busy={joining} onClick={join}>
+      <main className={s.gate}>
+        <Bill
+          presents={`${t.sponsor.name ?? 'A sponsor'} presents`}
+          title={t.title}
+          stamp={BILL_STAMP[t.status]}
+          facts={[
+            { label: 'On the line', value: money(t.commitmentCents, t.currency) },
+            { label: 'Stages', value: t.stages },
+            { label: 'Players', value: `${t.players}/${t.maxPlayers}` },
+          ]}
+        />
+        <Text tone="dust">Open to everyone. {prizeLine(t)}.</Text>
+        <Button variant="primary" size="lg" block busy={joining} onClick={join}>
           Join tournament
         </Button>
-        <Button to="/" variant="ghost">
+        <Button to="/" variant="ghost" block>
           Back to the hub
         </Button>
-      </div>
+      </main>
     );
   }
   return <Room id={id} />;
@@ -92,13 +108,16 @@ function Room({ id }: { id: string }) {
 
   if (!view) {
     return status === 'refused' ? (
-      <div className={s.gate}>
-        <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-3xl)', textTransform: 'uppercase' }}>Can’t enter the room</h1>
-        <p style={{ color: 'var(--dust)' }}>You’re not on this tournament’s list, or your session ended.</p>
-        <Button to="/" variant="primary">
-          Back to the hub
-        </Button>
-      </div>
+      <StatusScreen
+        title="Can’t enter the room"
+        actions={
+          <Button to="/" variant="primary" block>
+            Back to the hub
+          </Button>
+        }
+      >
+        <Text tone="dust">You’re not on this tournament’s list, or your session ended. Join again from an invite.</Text>
+      </StatusScreen>
     ) : (
       <Loading label={status === 'reconnecting' ? 'Reconnecting' : 'Entering the room'} />
     );
@@ -161,14 +180,17 @@ function Room({ id }: { id: string }) {
       break;
     default:
       body = (
-        <div className={s.gate}>
-          <Chip tone="stop">{phase === 'CANCELED' ? 'Canceled' : 'Expired'}</Chip>
-          <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-3xl)', textTransform: 'uppercase' }}>{phase === 'CANCELED' ? 'Tournament canceled' : 'Lobby expired'}</h1>
-          <p style={{ color: 'var(--dust)' }}>{view.endedReason ?? 'This tournament closed before it started.'} No results or prizes were recorded.</p>
-          <Button to="/" variant="primary">
-            Back to the hub
-          </Button>
-        </div>
+        <StatusScreen
+          chip={<Chip tone="stop">{phase === 'CANCELED' ? 'Canceled' : 'Expired'}</Chip>}
+          title={phase === 'CANCELED' ? 'Tournament canceled' : 'Lobby expired'}
+          actions={
+            <Button to="/" variant="primary" block>
+              Back to the hub
+            </Button>
+          }
+        >
+          <Text tone="dust">{view.endedReason ?? 'This tournament closed before it started.'} No results or prizes were recorded.</Text>
+        </StatusScreen>
       );
   }
 
@@ -186,41 +208,43 @@ function Room({ id }: { id: string }) {
       </Sheet>
       <Sheet open={sheet === 'menu'} title="Rules" onClose={() => setSheet(null)}>
         {stage && (
-          <div style={{ display: 'grid', gap: 12 }}>
-            <h3 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-2xl)', textTransform: 'uppercase' }}>{GAME_META[stage.gameId].name}</h3>
-            <ol style={{ margin: 0, paddingLeft: '1.2em', display: 'grid', gap: 8 }}>
+          <Stack gap={4}>
+            <h3 className={s.sheetGame}>{GAME_META[stage.gameId].name}</h3>
+            <ol className={s.sheetRules}>
               {GAME_META[stage.gameId].instructions.map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ol>
-            <p style={{ color: 'var(--dust)', fontSize: 14 }}>
+            <Text tone="dust" size="sm">
               <b>Win:</b> {GAME_META[stage.gameId].winRule} <b>Ties:</b> {GAME_META[stage.gameId].tieRule}
-            </p>
-            <p style={{ color: 'var(--dust)', fontSize: 14 }}>A tournament stage is one game. Its rounds happen inside the stage; everyone eligible starts each new stage fresh.</p>
+            </Text>
+            <Text tone="ash" size="sm">
+              A tournament stage is one game. Its rounds happen inside the stage; everyone eligible starts each new stage fresh.
+            </Text>
             {me && me.competes && !me.left && (
-              <Button variant="danger" onClick={() => setSheet('confirm-leave')}>
+              <Button variant="danger" block onClick={() => setSheet('confirm-leave')}>
                 Forfeit the tournament
               </Button>
             )}
-          </div>
+          </Stack>
         )}
       </Sheet>
       <Sheet open={sheet === 'confirm-leave'} title={me?.isSponsor ? 'Cancel tournament?' : phase === 'LOBBY' ? 'Leave lobby?' : 'Forfeit?'} onClose={() => setSheet(null)}>
-        <div style={{ display: 'grid', gap: 12 }}>
-          <p style={{ color: 'var(--dust)' }}>
+        <Stack gap={3}>
+          <Text tone="dust">
             {me?.isSponsor
               ? 'Everyone in the lobby is notified. No results or prizes are recorded. This can’t be undone.'
               : phase === 'LOBBY'
                 ? 'You can join again with a valid invite.'
                 : 'You’ll be out of every remaining stage and can’t rejoin this tournament.'}
-          </p>
+          </Text>
           <Button variant="danger" block onClick={confirmLeave}>
             {me?.isSponsor ? 'Cancel tournament' : phase === 'LOBBY' ? 'Leave lobby' : 'Forfeit'}
           </Button>
           <Button variant="ghost" block onClick={() => setSheet(null)}>
             Keep going
           </Button>
-        </div>
+        </Stack>
       </Sheet>
     </div>
   );
@@ -235,10 +259,10 @@ function PlayersList({ view }: { view: RoomView }) {
       {rows.map((p) => (
         <div className={s.player} key={p.id} data-left={p.left}>
           <Who name={p.name} tag={p.tag}>
-            <span style={{ fontSize: 12, color: 'var(--ash)' }}>
+            <Text as="span" tone="ash" size="xs">
               {p.stageWins} stage win{p.stageWins === 1 ? '' : 's'}
               {p.submitted && view.phase === 'ROUND' ? ', locked in' : ''}
-            </span>
+            </Text>
           </Who>
           <div className={s.playerEnd}>
             <Chip tone={tone[p.status]}>{label[p.status]}</Chip>
@@ -266,7 +290,7 @@ function Finished({ view, name }: { view: RoomView; name: (id: string) => string
         currency={view.config.currency}
         myId={view.me?.id ?? null}
       />
-      <div style={{ display: 'grid', gap: 8 }}>
+      <Stack gap={2}>
         <Button variant="primary" to={`/t/${view.id}/results`}>
           Full results and stage history
         </Button>
@@ -278,7 +302,7 @@ function Finished({ view, name }: { view: RoomView; name: (id: string) => string
         <Button variant="ghost" to="/">
           Back to the hub
         </Button>
-      </div>
+      </Stack>
     </div>
   );
 }

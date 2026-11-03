@@ -2,7 +2,7 @@ import { get, type TournamentSummary } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { STATUS, ago, money, plural, prizeLine } from '../lib/format';
 import { Button } from '../ui/controls';
-import { Chip, Empty, Loading, Note, Page, PageHead, Row, Rows, Section } from '../ui/layout';
+import { Chip, Empty, Loading, Note, Page, PageHead, Row, Rows, Section, Stats, Text } from '../ui/layout';
 import { Link } from '../lib/router';
 import s from './screens.module.css';
 
@@ -44,7 +44,7 @@ export function SponsorScreen() {
   return (
     <Page>
       <PageHead title="Sponsor" lede="Put up the prizes, set the stages, run the room. Everything you configure is locked the moment the countdown starts.">
-        <div style={{ marginTop: 12 }}>
+        <div className={s.headAction}>
           <Button variant="primary" size="lg" icon="plus" to="/sponsor/new">
             New tournament
           </Button>
@@ -57,20 +57,13 @@ export function SponsorScreen() {
         <Empty title="You haven’t sponsored anything yet">Create a tournament, share the invite link, and start it when your players are in.</Empty>
       ) : (
         <>
-          <div className={s.totals}>
-            <div className={s.recordStat}>
-              <b>{active.length}</b>
-              <span>Tournaments</span>
-            </div>
-            <div className={s.recordStat}>
-              <b>{[...byCurrency].map(([c, v]) => money(v, c)).join(' + ') || money(0)}</b>
-              <span>Prizes committed</span>
-            </div>
-            <div className={s.recordStat}>
-              <b>{active.reduce((n, t) => n + t.players, 0)}</b>
-              <span>Players hosted</span>
-            </div>
-          </div>
+          <Stats
+            items={[
+              { label: 'Prizes committed', value: [...byCurrency].map(([c, v]) => money(v, c)).join(' + ') || money(0) },
+              { label: 'Tournaments', value: active.length },
+              { label: 'Players hosted', value: active.reduce((n, t) => n + t.players, 0) },
+            ]}
+          />
           {groups
             .filter((g) => g.items.length)
             .map((g) => (
@@ -81,9 +74,9 @@ export function SponsorScreen() {
                   ))}
                 </Rows>
                 {g.title === 'Finished' && (
-                  <p style={{ fontSize: 14, color: 'var(--ash)' }}>
+                  <Text tone="ash" size="sm">
                     Every finished tournament has a full audit trail: open it and choose <Link to={`/t/${g.items[0].id}/audit`}>Audit log</Link>.
-                  </p>
+                  </Text>
                 )}
               </Section>
             ))}

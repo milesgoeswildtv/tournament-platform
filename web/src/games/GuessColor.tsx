@@ -61,18 +61,16 @@ export function GuessColorReveal({ reveal, myId }: RevealProps) {
     <div className={s.reveal}>
       <div className={s.revealHead}>
         <p className={s.small}>The house drew</p>
-        <p className={s.big} style={{ color: CAN[r.winning] }}>
+        <p className={`${s.big} ${s.inAccent}`} style={vars({ '--accent': CAN[r.winning] })}>
           {r.winning}
         </p>
         {mine !== undefined && <p className={s.small}>{mine ? `You picked ${cap(mine)}` : 'You didn’t pick'}</p>}
       </div>
-      <div className={s.cans}>
+      <div className={`${s.cans} ${s.cansTally}`}>
         {COLORS.map((c) => (
-          <div key={c} className={s.can} style={vars({ '--c': CAN[c], maxHeight: 56 })} data-win={c === r.winning}>
+          <div key={c} className={s.can} style={vars({ '--c': CAN[c] })} data-win={c === r.winning}>
             <span className={s.swatch} aria-hidden />
-            <span className={s.canName} style={{ fontSize: 'var(--t-xl)' }}>
-              {c}
-            </span>
+            <span className={s.canName}>{c}</span>
             <span className={s.count}>{r.tally?.[c] ?? 0}</span>
           </div>
         ))}

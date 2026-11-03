@@ -4,7 +4,7 @@ import { GAME_UI } from '../../games';
 import { audio, haptic } from '../../lib/audio';
 import { gameName, ordinal, plural } from '../../lib/format';
 import { Button, vars } from '../../ui/controls';
-import { Chip } from '../../ui/layout';
+import { Chip, Stack, Text } from '../../ui/layout';
 import { GAME_ACCENT, GameMark } from '../../ui/GameMark';
 import { FieldDots, Hazard, Stamp, TimerBar, useSecondsLeft } from '../../ui/live';
 import s from './room.module.css';
@@ -30,14 +30,18 @@ export function Countdown({ view, send, serverNow }: { view: RoomView; send: Sen
         <div key={left} className={`${s.countNum} ${s.slam}`} data-hot={left <= 10} role="timer" aria-live="polite" aria-label={`${left} seconds`}>
           {left}
         </div>
-        <div className={s.countNext}>
-          <span className={s.countLabel}>Stage 1 of {view.totalStages}</span>
-          <GameMark id={first} size={44} />
-          <b>{first ? GAME_META[first].name : 'Random game'}</b>
+        <div className={s.countNext} style={vars({ '--accent': first ? GAME_ACCENT[first] : 'var(--ash)' })}>
+          <span className={s.countLabel}>First up, stage 1 of {view.totalStages}</span>
+          <span className={s.countGame}>
+            <GameMark id={first} size={40} />
+            <b>{first ? GAME_META[first].name : 'Random game'}</b>
+          </span>
         </div>
       </div>
       <div className={s.countFoot}>
-        <p style={{ color: 'var(--dust)' }}>{plural(competitors.length, 'competitor')} locked in. Settings and award criteria are frozen.</p>
+        <Text tone="dust" center>
+          {plural(competitors.length, 'player')} locked in. Settings and award criteria are frozen.
+        </Text>
         {view.me?.isSponsor ? (
           <Button variant="danger" onClick={() => send({ t: 'abort' })}>
             Stop countdown
@@ -68,11 +72,11 @@ export function StageIntro({ view, serverNow }: { view: RoomView; serverNow: () 
           <br />
           of {view.totalStages}
         </span>
-        <span style={{ marginLeft: 'auto' }}>
+        <span className={s.introMark}>
           <GameMark id={st.gameId} size={64} />
         </span>
       </div>
-      <div>
+      <div className={s.introTitle}>
         <h1 className={s.introName}>{meta.name}</h1>
         <p className={s.introTag}>{meta.tagline}</p>
       </div>
@@ -82,17 +86,17 @@ export function StageIntro({ view, serverNow }: { view: RoomView; serverNow: () 
         ))}
       </ol>
       <div className={s.introFacts}>
-        <Chip tone="info">Round timer {Math.round(st.durationMs / 1000)}s</Chip>
+        <Chip tone="info">{Math.round(st.durationMs / 1000)}s per {meta.roundNoun.toLowerCase()}</Chip>
         <Chip>Up to {plural(meta.maxRounds, meta.roundNoun.toLowerCase())}</Chip>
         <Chip>{plural(st.participantCount, 'player')}</Chip>
       </div>
-      <div className={s.introFoot}>
-        <p style={{ color: 'var(--dust)', fontSize: 14 }}>
-          <b style={{ color: 'var(--chalk)' }}>Win:</b> {meta.winRule} <b style={{ color: 'var(--chalk)' }}>Ties:</b> {meta.tieRule}
-        </p>
+      <Stack gap={3} push>
+        <Text tone="dust" size="sm">
+          <b>Win:</b> {meta.winRule} <b>Ties:</b> {meta.tieRule}
+        </Text>
         {!inStage && <Chip tone="muted">{me?.status === 'waiting' ? `You’re in from stage ${me.eligibleFrom}` : me?.status === 'host' ? 'You’re hosting this one' : 'Watching'}</Chip>}
         {view.phaseEndsAt && <TimerBar startsAt={view.phaseStartedAt} endsAt={view.phaseEndsAt} serverNow={serverNow} ticks={false} calm label="Stage starts in" />}
-      </div>
+      </Stack>
     </div>
   );
 }
@@ -155,6 +159,8 @@ export function StageFloor({ view, send, serverNow, name }: { view: RoomView; se
   const dots = view.players
     .filter((p) => p.status === 'alive' || p.status === 'out')
     .map((p) => ({ id: p.id, name: p.name, me: p.id === myId, state: (p.status === 'out' ? 'out' : p.submitted ? 'done' : 'alive') as 'alive' | 'done' | 'out' }));
+  const lockedIn = dots.filter((d) => d.state === 'done').length;
+  const standing = dots.filter((d) => d.state !== 'out').length;
 
   return (
     <>
@@ -175,7 +181,14 @@ export function StageFloor({ view, send, serverNow, name }: { view: RoomView; se
             <span>{lr ? `${plural(lr.eliminated.length, 'player')} out` : ''}</span>
           </div>
         )}
-        {round && <FieldDots dots={dots} />}
+        {round && (
+          <div className={s.fieldLine}>
+            <FieldDots dots={dots} />
+            <span>
+              {lockedIn} of {standing} locked in
+            </span>
+          </div>
+        )}
       </div>
       <div className={s.board}>
         {round ? (
@@ -215,44 +228,55 @@ export function StageResult({ view, serverNow, name }: { view: RoomView; serverN
     .sort((a, b) => b.stageWins - a.stageWins)
     .slice(0, 6);
   return (
-    <div className={s.result}>
+    <div className={s.result} style={vars({ '--accent': GAME_ACCENT[rec.gameId] })}>
       <div className={s.resultWin}>
-        <Chip tone="live">
+        <span className={s.resultStage}>
+          <GameMark id={rec.gameId} size={28} />
           Stage {rec.index} of {view.totalStages}: {GAME_META[rec.gameId].name}
-        </Chip>
+        </span>
         {rec.winners.length ? (
           <>
-            <p style={{ color: 'var(--dust)' }}>{rec.winners.length > 1 ? 'Shared win' : 'Stage winner'}</p>
+            <Text tone="dust" cond>
+              {rec.winners.length > 1 ? 'Shared stage win' : 'Stage winner'}
+            </Text>
             <h1 className={s.resultName}>{rec.winners.map(name).join(' + ')}</h1>
           </>
         ) : (
-          <h1 className={s.resultName} style={{ color: 'var(--dust)' }}>
+          <h1 className={s.resultName} data-none>
             No winner
           </h1>
         )}
-        <p className={s.resultNone}>{rec.summary}</p>
-        {iWon ? <Stamp tone="live">Stage win</Stamp> : place >= 0 ? <p>You placed {ordinal(place + 1)} of {rec.participants.length}.</p> : null}
+        <Text tone="dust">{rec.summary}</Text>
+        {iWon ? (
+          <Stamp tone="live">Stage win</Stamp>
+        ) : place >= 0 ? (
+          <Text>
+            You placed <b>{ordinal(place + 1)}</b> of {rec.participants.length}.
+          </Text>
+        ) : null}
       </div>
       <div className={s.tally}>
-        <p style={{ fontFamily: 'var(--f-cond)', fontWeight: 600, color: 'var(--ash)', marginBottom: 4 }}>Stage wins so far</p>
+        <Text tone="ash" size="sm" cond>
+          Stage wins so far
+        </Text>
         {table.map((p, i) => (
           <div className={s.tallyRow} key={p.id} data-me={p.id === myId}>
             <span className={s.tallyNo}>{i + 1}</span>
-            <span>{p.name}</span>
+            <span className={s.tallyName}>{p.name}</span>
             <span className={s.tallyVal}>{p.stageWins}</span>
           </div>
         ))}
       </div>
-      <div style={{ marginTop: 'auto', display: 'grid', gap: 12 }}>
+      <Stack gap={3} push>
         {next !== undefined ? (
-          <p style={{ color: 'var(--dust)' }}>
-            Next: stage {view.currentStage + 1}, <b style={{ color: 'var(--chalk)' }}>{gameName(next)}</b>
-          </p>
+          <Text tone="dust">
+            Next: stage {view.currentStage + 1}, <b>{gameName(next)}</b>
+          </Text>
         ) : (
-          <p style={{ color: 'var(--dust)' }}>That was the last stage. Final standings next.</p>
+          <Text tone="dust">That was the last stage. Final standings next.</Text>
         )}
         {view.phaseEndsAt && <TimerBar startsAt={view.phaseStartedAt} endsAt={view.phaseEndsAt} serverNow={serverNow} ticks={false} calm label="Next stage in" />}
-      </div>
+      </Stack>
     </div>
   );
 }

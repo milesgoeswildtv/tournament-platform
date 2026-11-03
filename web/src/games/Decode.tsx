@@ -8,13 +8,12 @@ import s from './games.module.css';
 function Board({ text, open }: { text: string; open?: boolean }) {
   const words = text.split(' ');
   const longest = Math.max(...words.map((w) => w.length));
-  const tile = Math.max(20, Math.min(36, Math.floor(320 / Math.max(6, longest))));
   return (
-    <div className={s.board} style={vars({ '--tile': `${tile}px` })} aria-label={open ? text : `Hidden phrase: ${words.length} words`}>
+    <div className={s.board} style={vars({ '--n': Math.max(6, longest) })} aria-label={open ? text : `Hidden phrase: ${words.length} words`}>
       {words.map((w, i) => (
         <div className={s.word} key={i}>
           {w.split('').map((ch, j) => (
-            <span key={j} className={`${s.tile} ${ch === '_' ? s.tileBlank : ''} ${open ? s.tileOpen : ''}`} style={open ? { animationDelay: `${(i * 4 + j) * 25}ms` } : undefined}>
+            <span key={j} className={`${s.tile} ${ch === '_' ? s.tileBlank : ''} ${open ? s.tileOpen : ''}`} style={open ? vars({ '--i': i * 4 + j }) : undefined}>
               {ch === '_' ? '' : ch}
             </span>
           ))}
@@ -35,8 +34,9 @@ export function DecodePlay({ pub, mine, me, canAct, pending, act, stage }: PlayP
   return (
     <div className={s.play}>
       <div className={s.grow}>
-        <p className={s.hint}>
-          {pub?.category ?? 'Phrase'}: first letters shown{stage.round >= 3 ? ', vowels open' : ''}
+        <p className={s.category}>
+          <b>{pub?.category ?? 'Phrase'}</b>
+          <span>First letters shown{stage.round >= 3 ? ', vowels open' : ''}</span>
         </p>
         {pub?.board && <Board text={pub.board} />}
         {pub?.clues?.length > 0 && (
