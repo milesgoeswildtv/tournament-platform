@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { GAME_IDS, GAME_META, defaultConfig, type GameId, type RoomView } from '../../../shared/src/index';
-import { API_BASE, getToken, post, wsUrl, useSession } from '../lib/api';
-import { Button, TextInput } from '../ui/controls';
+import { API_BASE, getToken, wsUrl, useSession } from '../lib/api';
+import { Button } from '../ui/controls';
 import { Chip, Empty, Page, PageHead, Section, Text } from '../ui/layout';
 import s from './bot-lab.module.css';
 
@@ -165,11 +165,11 @@ export function BotLabScreen() {
     </Section>
     {run && <Section title="Live test" aside={<Chip tone="live" dot>Connected</Chip>}>
       <div className={s.live}><b>{GAME_META[run.game].name}</b><span>{run.bots.length} bots connected</span><span>Room: {run.id}</span><span>Invite: {run.invite}</span><Button variant="danger" onClick={stop}>Disconnect bots</Button></div>
-      <div className={s.botList}>{run.bots.map((b) => <div key={b.handle}><b>{b.handle}</b><span>{b.view?.phase ?? 'Connecting'}{b.view?.stage ? ` · Round ${b.view.stage.round}` : ''}</span><Chip tone={b.view?.me?.status === 'eliminated' ? 'danger' : 'good'}>{b.view?.me?.status ?? 'Waiting'}</Chip></div>)}</div>
+      <div className={s.botList}>{run.bots.map((b) => <div key={b.handle}><b>{b.handle}</b><span>{b.view?.phase ?? 'Connecting'}{b.view?.stage ? ` · Round ${b.view.stage.round}` : ''}</span><Chip tone={b.view?.me?.status === 'out' ? 'stop' : 'go'}>{b.view?.me?.status ?? 'Waiting'}</Chip></div>)}</div>
     </Section>}
     <Section title="Activity log">
       {logs.length ? <pre className={s.log}>{logs.join('\n')}</pre> : <Empty title="No test activity yet">Create a room to see bot connections and tournament events here.</Empty>}
-      {error && <Text tone="danger">{error}</Text>}
+      {error && <Text tone="stop">{error}</Text>}
     </Section>
   </Page>;
 }
