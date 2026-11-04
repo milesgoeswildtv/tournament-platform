@@ -154,11 +154,11 @@ export function AuthScreen() {
             )}
             {p.telegram.bot && !inTelegram() && (
               <Button icon="telegram" block onClick={() => window.open(`https://t.me/${p.telegram.bot}`, '_blank', 'noopener')}>
-                Play in Telegram
+                Continue with Telegram
               </Button>
             )}
             <Text tone="ash" size="sm">
-              Discord and Telegram sign you in to one SHYST player. Already have one? Link them in Settings.
+              Telegram opens the SHYST bot; tap Start to launch the Mini App. Discord and Telegram can both sign in to the same SHYST player.
             </Text>
           </div>
         )}
