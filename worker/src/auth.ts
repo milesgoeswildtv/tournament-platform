@@ -220,6 +220,30 @@ export async function startTelegramLink(c: RouteCtx): Promise<Response> {
   });
 }
 
+/** Add username/password sign-in to an existing provider-created player, or change its credentials. */
+export async function setPasswordLogin(c: RouteCtx): Promise<Response> {
+  const u = await requireUser(c);
+  await rateLimit(c.env, `password-link:${u.id}`, 8, 3600);
+  const body = await readJson(c.req);
+  const handle = (typeof body.handle === 'string' ? body.handle : u.handle ?? '').trim().toLowerCase();
+  if (!HANDLE_RE.test(handle)) throw new HttpError(400, 'invalid_input', 'Username: 3–20 letters, numbers or underscores', { field: 'handle' });
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (password.length < 8 || password.length > 128) throw new HttpError(400, 'invalid_input', 'Password must be 8–128 characters', { field: 'password' });
+  if (u.password_hash) {
+    const current = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+    const check = await hashPassword(current, u.password_salt ?? 'AAAAAAAAAAAAAAAAAAAAAA==');
+    if (!timingSafeEqual(check.hash, u.password_hash)) throw new HttpError(401, 'invalid_current_password', 'Enter your current password to change it.', { field: 'currentPassword' });
+  }
+  const taken = await c.env.DB.prepare('SELECT id FROM users WHERE handle = ? AND id <> ? AND merged_into IS NULL').bind(handle, u.id).first<{ id: string }>();
+  if (taken) throw new HttpError(409, 'handle_taken', 'That username is already in use.', { field: 'handle' });
+  const credentials = await hashPassword(password);
+  const t = now();
+  await c.env.DB.prepare('UPDATE users SET handle = ?, password_hash = ?, password_salt = ?, updated_at = ? WHERE id = ?')
+    .bind(handle, credentials.hash, credentials.salt, t, u.id).run();
+  const updated = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first<UserRow>();
+  return json({ user: publicUser(updated!) });
+}
+
 export async function updateMe(c: RouteCtx): Promise<Response> {
   const u = await requireUser(c);
   await rateLimit(c.env, `profile:${u.id}`, 20, 3600);
