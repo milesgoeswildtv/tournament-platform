@@ -105,6 +105,7 @@ jobs:
           echo "Discord redirect URI to register: ${{ steps.urls.outputs.api }}/api/auth/discord/callback" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Telegram secrets + bot setup
+        continue-on-error: true
         if: steps.creds.outputs.ok == 'true' && env.TELEGRAM_BOT_TOKEN != ''
         run: |
           printf '%s' "$TELEGRAM_BOT_TOKEN" | npx wrangler secret put TELEGRAM_BOT_TOKEN
