@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { GAME_IDS, GAME_META, defaultConfig, type GameId, type RoomView } from '../../../shared/src/index';
+import { GAME_IDS, type GameId } from '../../../shared/src/types';
+import { defaultConfig } from '../../../shared/src/config';
+import type { RoomView } from '../../../shared/src/room';
 import { API_BASE, getToken, wsUrl, useSession } from '../lib/api';
 import { Button } from '../ui/controls';
 import { Chip, Empty, Page, PageHead, Section, Text } from '../ui/layout';
@@ -8,6 +10,18 @@ import s from './bot-lab.module.css';
 type BotStyle = 'random' | 'careful' | 'aggressive' | 'skilled' | 'chaotic';
 type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; ready?: boolean; acted: Set<string> };
 type Run = { id: string; invite: string; game: GameId; bots: Bot[]; host: WebSocket; started: boolean };
+
+const GAME_NAMES: Record<GameId, string> = {
+  'guess-color': 'Guess the Color',
+  'zero-hour': 'Zero Hour',
+  'high-low': 'Trust Yourself',
+  decode: 'Decode',
+  'suited-up': 'Suited Up',
+  'pressure-cooker': 'Pressure Cooker',
+  speedrun: 'Randomizer Speedrun',
+  flood: 'The Flood',
+  'wrong-way': 'Wrong Way',
+};
 
 const API = async (method: string, path: string, body?: unknown, token?: string) => {
   const res = await fetch(`${API_BASE}${path}`, { method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
@@ -103,7 +117,7 @@ export function BotLabScreen() {
     const bots: Bot[] = [];
     try {
       const cfg = defaultConfig();
-      cfg.title = `BOT LAB — ${GAME_META[game].name} — ${new Date().toLocaleString()}`;
+      cfg.title = `BOT LAB — ${GAME_NAMES[game]} — ${new Date().toLocaleString()}`;
       cfg.stages = 10;
       cfg.games = { selection: 'MANUAL', manual: Array(10).fill(game), pool: [] };
       cfg.timer = { minSeconds: 15, maxSeconds: 15 };
@@ -162,7 +176,7 @@ export function BotLabScreen() {
     <PageHead title="Bot lab" lede="Private test tournaments. Bots use ordinary player accounts, WebSockets and server-validated actions. No hidden answers." />
     <Section title="Run a game">
       <div className={s.form}>
-        <label>Game<select value={game} disabled={busy || !!run} onChange={(e) => setGame(e.target.value as GameId)}>{GAME_IDS.map((id) => <option key={id} value={id}>{GAME_META[id].name}</option>)}</select></label>
+        <label>Game<select value={game} disabled={busy || !!run} onChange={(e) => setGame(e.target.value as GameId)}>{GAME_IDS.map((id) => <option key={id} value={id}>{GAME_NAMES[id]}</option>)}</select></label>
         <label>Bot count <select value={count} disabled={busy || !!run} onChange={(e) => setCount(Number(e.target.value))}>{[2,3,4,5,6,8,10,12,16,20].map((n) => <option key={n} value={n}>{n} bots</option>)}</select></label>
         <label>Bot behavior <select value={style} disabled={busy || !!run} onChange={(e) => setStyle(e.target.value as BotStyle)}><option value="random">Random</option><option value="careful">Careful</option><option value="aggressive">Fast / aggressive</option><option value="skilled">Skilled guesses</option><option value="chaotic">Chaotic</option></select></label>
         <Button onClick={start} disabled={busy || !!run}>{busy ? 'Building test room…' : 'Create room & run bots'}</Button>
@@ -170,7 +184,7 @@ export function BotLabScreen() {
       <Text tone="dust" size="sm">Creates a private 10-stage tournament using the selected game. Each bot account is reused on later runs. The host does not compete. The configured prize is a one-cent test award, not a payment.</Text>
     </Section>
     {run && <Section title="Live test" aside={<Chip tone="live" dot>Connected</Chip>}>
-      <div className={s.live}><b>{GAME_META[run.game].name}</b><span>{run.bots.length} bots connected</span><span>Room: {run.id}</span><span>Invite: {run.invite}</span><Button variant="danger" onClick={stop}>Disconnect bots</Button></div>
+      <div className={s.live}><b>{GAME_NAMES[run.game]}</b><span>{run.bots.length} bots connected</span><span>Room: {run.id}</span><span>Invite: {run.invite}</span><Button variant="danger" onClick={stop}>Disconnect bots</Button></div>
       <div className={s.botList}>{run.bots.map((b) => <div key={b.handle}><b>{b.handle}</b><span>{b.view?.phase ?? 'Connecting'}{b.view?.stage ? ` · Round ${b.view.stage.round}` : ''}</span><Chip tone={b.view?.me?.status === 'out' ? 'stop' : 'go'}>{b.view?.me?.status ?? 'Waiting'}</Chip></div>)}</div>
     </Section>}
     <Section title="Activity log">
