@@ -8,7 +8,7 @@ import { Chip, Empty, Page, PageHead, Section, Text } from '../ui/layout';
 import s from './bot-lab.module.css';
 
 type BotStyle = 'random' | 'careful' | 'aggressive' | 'skilled' | 'chaotic';
-type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; heartbeat?: number; ready?: boolean; acted: Set<string> };
+type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; heartbeat?: number; ready?: boolean; pending?: { key: string; kind: 'action' | 'reroll' }; completed: Set<string>; failed: Set<string> };
 type Run = { id: string; invite: string; game: GameId; bots: Bot[]; host: WebSocket; started: boolean };
 
 const GAME_NAMES: Record<GameId, string> = {
@@ -51,18 +51,42 @@ function actionFor(game: GameId, view: RoomView, style: BotStyle): unknown {
   }
 }
 
-function connectBot(index: number, token: string, tid: string, gameStyle: BotStyle, onLog: (line: string) => void): Promise<Bot> {
+function connectBot(index: number, token: string, tid: string, gameStyle: BotStyle, onLog: (line: string) => void, onView: () => void): Promise<Bot> {
   const handle = `shystbot_${String(index).padStart(2, '0')}`;
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl(`/api/tournaments/${tid}/ws`), ['bearer', token]);
-    const bot: Bot = { index, handle, token, ws, view: null, acted: new Set() };
+    const bot: Bot = { index, handle, token, ws, view: null, completed: new Set(), failed: new Set() };
     const timeout = window.setTimeout(() => reject(new Error(`${handle} connection timed out`)), 12000);
+    const ping = () => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
+    };
+    const schedule = (view: RoomView) => {
+      const stage = view.stage;
+      if (view.phase !== 'ROUND' || !stage || view.me?.status !== 'alive' || view.me.submitted) return;
+      const key = `${stage.index}:${stage.round}`;
+      if (bot.pending?.key === key || bot.completed.has(key) || bot.failed.has(key)) return;
+      const privateState = view.me.private as any;
+      const reroll = stage.gameId === 'high-low' && privateState && !privateState.call && !privateState.rerolled &&
+        privateState.number >= 35 && privateState.number <= 65 && !bot.completed.has(`${key}:reroll`);
+      const kind = reroll ? 'reroll' : 'action';
+      bot.pending = { key, kind };
+      onLog(`${handle}: ${kind === 'reroll' ? 'rerolling' : 'choosing'} for ${stage.gameId}, stage ${stage.index}, round ${stage.round}`);
+      const delay = gameStyle === 'aggressive' ? 180 : gameStyle === 'careful' ? 1200 : 450 + rand(900);
+      bot.stop = window.setTimeout(() => {
+        const latest = bot.view;
+        if (!latest || latest.phase !== 'ROUND' || !latest.stage || latest.stage.index !== stage.index || latest.stage.round !== stage.round || latest.me?.status !== 'alive' || latest.me.submitted) {
+          bot.pending = undefined;
+          ping();
+          return;
+        }
+        const action = kind === 'reroll' ? { type: 'reroll' } : actionFor(latest.stage.gameId, latest, gameStyle);
+        ws.send(JSON.stringify({ t: 'act', stage: stage.index, round: stage.round, action }));
+        onLog(`${handle}: sent ${JSON.stringify(action)}; waiting for server confirmation`);
+      }, delay);
+    };
     ws.onopen = () => {
-      ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
-      // Keep a fresh authoritative view even if a phase-transition broadcast is missed.
-      bot.heartbeat = window.setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
-      }, 2000);
+      ping();
+      bot.heartbeat = window.setInterval(ping, 2000);
     };
     ws.onerror = () => {
       window.clearTimeout(timeout);
@@ -72,32 +96,50 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
     ws.onmessage = (event) => {
       let msg: any;
       try { msg = JSON.parse(String(event.data)); } catch { return; }
-      if (msg.t === 'error') onLog(`${handle}: server rejected ${msg.ref ?? 'message'} (${msg.code})`);
+      if (msg.t === 'error') {
+        if (msg.ref === 'act' && bot.pending) {
+          const pending = bot.pending;
+          bot.pending = undefined;
+          const retryable = msg.code === 'rate_limited' || msg.code === 'stale_round' || msg.code === 'round_closed';
+          onLog(`${handle}: action rejected (${msg.code})${retryable ? '; refreshing authoritative state' : '; stopping this round'}`);
+          if (!retryable) bot.failed.add(pending.key);
+          else window.setTimeout(ping, msg.code === 'rate_limited' ? 300 : 0);
+        } else {
+          onLog(`${handle}: server rejected ${msg.ref ?? 'message'} (${msg.code})`);
+        }
+        return;
+      }
       if (msg.t !== 'state') return;
       bot.view = msg.view as RoomView;
-      if (bot.view.phase === 'ROUND' && bot.view.stage && bot.view.me?.status === 'alive' && !bot.view.me.submitted) {
-        const privateState = bot.view.me.private as any;
-        const key = `${bot.view.stage.index}:${bot.view.stage.round}`;
-        if (bot.view.stage.gameId === 'high-low' && privateState && !privateState.call && !privateState.rerolled && privateState.number >= 35 && privateState.number <= 65 && !bot.acted.has(`${key}:reroll`)) {
-          bot.acted.add(`${key}:reroll`);
-          ws.send(JSON.stringify({ t: 'act', stage: bot.view.stage.index, round: bot.view.stage.round, action: { type: 'reroll' } }));
-          return;
+      const view = bot.view;
+      const stage = view.stage;
+      if (stage && view.phase === 'ROUND') {
+        const key = `${stage.index}:${stage.round}`;
+        const privateState = view.me?.private as any;
+        if (bot.pending?.key === key) {
+          if (bot.pending.kind === 'reroll' && privateState?.rerolled) {
+            bot.completed.add(`${key}:reroll`);
+            bot.pending = undefined;
+            onLog(`${handle}: reroll accepted by server`);
+          } else if (view.me?.submitted) {
+            bot.completed.add(key);
+            bot.pending = undefined;
+            onLog(`${handle}: action accepted and locked by server`);
+          }
         }
-        if (!bot.acted.has(key)) {
-          bot.acted.add(key);
-          onLog(`${handle}: detected ${bot.view.stage.gameId}, stage ${bot.view.stage.index}, round ${bot.view.stage.round}; choosing action`);
-          const delay = gameStyle === 'aggressive' ? 180 : gameStyle === 'careful' ? 1200 : 450 + rand(900);
-          bot.stop = window.setTimeout(() => {
-            const v = bot.view;
-            if (!v || v.phase !== 'ROUND' || !v.stage || v.stage.index !== bot.view?.stage?.index || v.stage.round !== bot.view?.stage?.round || v.me?.submitted) return;
-            const action = actionFor(v.stage.gameId, v, gameStyle);
-            ws.send(JSON.stringify({ t: 'act', stage: v.stage.index, round: v.stage.round, action }));
-            onLog(`${handle}: submitted ${JSON.stringify(action)}`);
-          }, delay);
+        if (view.me?.submitted) {
+          bot.completed.add(key);
+          bot.pending = undefined;
+        } else {
+          schedule(view);
         }
+      } else {
+        bot.pending = undefined;
+        if (bot.stop) { window.clearTimeout(bot.stop); bot.stop = undefined; }
       }
-      if (bot.view.phase === 'LOBBY' && !bot.stop) onLog(`${handle} connected`);
-      if (bot.view.phase === 'FINISHED') onLog(`${handle}: tournament finished`);
+      if (view.phase === 'LOBBY' && !bot.stop) onLog(`${handle} connected`);
+      if (view.phase === 'FINISHED') onLog(`${handle}: tournament finished`);
+      onView();
       if (!bot.ready) { bot.ready = true; window.clearTimeout(timeout); resolve(bot); }
     };
     ws.onclose = () => {
@@ -106,7 +148,6 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
     };
   });
 }
-
 export function BotLabScreen() {
   const session = useSession();
   const [count, setCount] = useState(5);
@@ -156,7 +197,7 @@ export function BotLabScreen() {
         }
         await API('POST', '/api/join', { code: created.invite.code }, auth.token);
         log(`${handle} joined`);
-        const bot = await connectBot(i, auth.token, created.id, style, log);
+        const bot = await connectBot(i, auth.token, created.id, style, log, () => setRun((old) => old ? { ...old, bots: [...old.bots] } : old));
         bots.push(bot);
       }
       host = new WebSocket(wsUrl(`/api/tournaments/${created.id}/ws`), ['bearer', token]);
