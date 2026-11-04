@@ -1,4 +1,5 @@
 import { get, useSession, type TournamentSummary } from '../lib/api';
+import { Link } from '../lib/router';
 import { useLoad } from '../lib/useLoad';
 import { STATUS, dateTime, money } from '../lib/format';
 import { Chip, Empty, Loading, Page, PageHead, Row, Rows } from '../ui/layout';
@@ -11,6 +12,7 @@ export function AdminScreen() {
   return (
     <Page>
       <PageHead title="Admin" lede="Every tournament on the platform. Open one to see its full audit trail." />
+      <p><Link to="/admin/bots">Open bot lab →</Link></p>
       <Rows>
         {(q.data?.tournaments ?? []).map((t) => (
           <Row

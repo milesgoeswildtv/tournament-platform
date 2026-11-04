@@ -18,6 +18,7 @@ import { RoomScreen } from './screens/RoomScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { AuditScreen } from './screens/AuditScreen';
 import { AdminScreen } from './screens/AdminScreen';
+import { BotLabScreen } from './screens/BotLabScreen';
 import { NotFound } from './screens/NotFound';
 
 type R = { pattern: string; render: (p: Record<string, string>) => ReactNode; shell?: boolean; public?: boolean };
@@ -41,6 +42,7 @@ const ROUTES: R[] = [
   { pattern: '/p/:tag', render: (p) => <ProfileScreen tag={p.tag} />, shell: true },
   { pattern: '/settings', render: () => <SettingsScreen />, shell: true },
   { pattern: '/admin', render: () => <AdminScreen />, shell: true },
+  { pattern: '/admin/bots', render: () => <BotLabScreen />, shell: true },
 ];
 
 function useUnread(signedIn: boolean, path: string) {
