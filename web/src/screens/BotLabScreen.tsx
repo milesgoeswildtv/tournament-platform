@@ -6,7 +6,7 @@ import { Chip, Empty, Page, PageHead, Section, Text } from '../ui/layout';
 import s from './bot-lab.module.css';
 
 type BotStyle = 'random' | 'careful' | 'aggressive' | 'skilled' | 'chaotic';
-type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; acted: Set<string> };
+type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; ready?: boolean; acted: Set<string> };
 type Run = { id: string; invite: string; game: GameId; bots: Bot[]; host: WebSocket; started: boolean };
 
 const API = async (method: string, path: string, body?: unknown, token?: string) => {
@@ -51,7 +51,7 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
       if (msg.t === 'error') onLog(`${handle}: ${msg.code}`);
       if (msg.t !== 'state') return;
       bot.view = msg.view as RoomView;
-      if (bot.view.phase === 'ROUND' && bot.view.stage && bot.view.me?.status === 'alive' && !bot.view.me.submitted) {
+      if (bot.view.phase === 'ROUND' && bot.view.stage && bot.view.me?.status === 'alive' && !bot.view.me.submitted) {\n        const privateState = bot.view.me.private as any;\n        const key = `${bot.view.stage.index}:${bot.view.stage.round}`;\n        if (bot.view.stage.gameId === 'high-low' && privateState && !privateState.call && !privateState.rerolled && privateState.number >= 35 && privateState.number <= 65 && !bot.acted.has(`${key}:reroll`)) {\n          bot.acted.add(`${key}:reroll`);\n          ws.send(JSON.stringify({ t: 'act', stage: bot.view.stage.index, round: bot.view.stage.round, action: { type: 'reroll' } }));\n          return;\n        }
         const key = `${bot.view.stage.index}:${bot.view.stage.round}`;
         if (!bot.acted.has(key)) {
           bot.acted.add(key);
@@ -65,7 +65,7 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
       }
       if (bot.view.phase === 'LOBBY' && !bot.stop) onLog(`${handle} connected`);
       if (bot.view.phase === 'FINISHED') onLog(`${handle}: tournament finished`);
-      if (!bot._ready) { bot._ready = true; window.clearTimeout(timeout); resolve(bot); }
+      if (!bot.ready) { bot.ready = true; window.clearTimeout(timeout); resolve(bot); }
     };
     ws.onclose = () => { if (bot.stop) window.clearTimeout(bot.stop); };
   });
