@@ -109,7 +109,7 @@ export async function register(c: RouteCtx): Promise<Response> {
   const { hash, salt } = await hashPassword(password);
   const id = newId('u');
   const t = now();
-  const admin = (c.env.ADMIN_HANDLES ?? '').split(',').map((s) => s.trim().toLowerCase()).includes(handle) ? 1 : 0;
+  const admin = 0; // Privileged access is never assigned during public registration.
   await c.env.DB.prepare(
     'INSERT INTO users (id, tag, handle, display_name, password_hash, password_salt, is_admin, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
