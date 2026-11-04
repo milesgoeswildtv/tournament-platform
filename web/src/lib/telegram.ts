@@ -84,7 +84,17 @@ export async function linkInMiniApp(): Promise<void> {
 }
 
 /** Returns the start parameter (e.g. an invite code) if the app was opened with one. */
-export async function bootTelegram(hasSession: boolean): Promise<string | null> {
+export async function signInWithTelegram(): Promise<TgAuth> {
+  const initData = telegramInitData();
+  if (!initData) throw new Error('Open SHYST from the Telegram bot to use Telegram sign-in.');
+  const r = await post<TgAuth>('/api/auth/telegram', { initData });
+  setSession({ token: r.token, user: r.user });
+  reportLink(r.link);
+  return r;
+}
+
+/** Initializes the Mini App shell without silently signing the player in. */
+export async function bootTelegram(_hasSession: boolean): Promise<string | null> {
   const initData = telegramInitData();
   if (!initData) return null;
   await loadSdk();
@@ -98,14 +108,10 @@ export async function bootTelegram(hasSession: boolean): Promise<string | null> 
   } catch {
     /* older clients */
   }
+  // Preserve invite and linking start parameters while leaving the auth choice
+  // to the player on the SHYST sign-in / create-account screen.
   try {
-    // The server decides which player this is (see worker/src/identity.ts); it
-    // never swaps a signed-in player for another one.
-    void hasSession;
-    const r = await post<TgAuth>('/api/auth/telegram', { initData });
-    setSession({ token: r.token, user: r.user });
-    reportLink(r.link);
-    return r.startParam;
+    return new URLSearchParams(initData).get('start_param');
   } catch {
     return null;
   }
