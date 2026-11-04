@@ -1,5 +1,5 @@
 import { GAME_META } from '../../shared/src/index';
-import { login, logout, register, startTelegramLink, telegramAuth, updateMe } from './auth';
+import { login, logout, register, setPasswordLogin, startTelegramLink, telegramAuth, updateMe } from './auth';
 import { telegramWebhook } from './bot';
 import { discordCallback, discordComplete, discordConfigured, discordExchange, discordStart } from './discord';
 import type { Env } from './env';
@@ -40,6 +40,7 @@ const router = new Router()
   .post('/api/auth/discord/complete', discordComplete)
   .get('/api/me', me)
   .patch('/api/me', updateMe)
+  .post('/api/me/password', setPasswordLogin)
   .post('/api/me/telegram/link', startTelegramLink)
   .get('/api/me/notifications', notifications)
   .post('/api/me/notifications/read', markNotificationsRead)
