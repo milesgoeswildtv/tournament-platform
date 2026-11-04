@@ -51,8 +51,14 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
       if (msg.t === 'error') onLog(`${handle}: ${msg.code}`);
       if (msg.t !== 'state') return;
       bot.view = msg.view as RoomView;
-      if (bot.view.phase === 'ROUND' && bot.view.stage && bot.view.me?.status === 'alive' && !bot.view.me.submitted) {\n        const privateState = bot.view.me.private as any;\n        const key = `${bot.view.stage.index}:${bot.view.stage.round}`;\n        if (bot.view.stage.gameId === 'high-low' && privateState && !privateState.call && !privateState.rerolled && privateState.number >= 35 && privateState.number <= 65 && !bot.acted.has(`${key}:reroll`)) {\n          bot.acted.add(`${key}:reroll`);\n          ws.send(JSON.stringify({ t: 'act', stage: bot.view.stage.index, round: bot.view.stage.round, action: { type: 'reroll' } }));\n          return;\n        }
+      if (bot.view.phase === 'ROUND' && bot.view.stage && bot.view.me?.status === 'alive' && !bot.view.me.submitted) {
+        const privateState = bot.view.me.private as any;
         const key = `${bot.view.stage.index}:${bot.view.stage.round}`;
+        if (bot.view.stage.gameId === 'high-low' && privateState && !privateState.call && !privateState.rerolled && privateState.number >= 35 && privateState.number <= 65 && !bot.acted.has(`${key}:reroll`)) {
+          bot.acted.add(`${key}:reroll`);
+          ws.send(JSON.stringify({ t: 'act', stage: bot.view.stage.index, round: bot.view.stage.round, action: { type: 'reroll' } }));
+          return;
+        }
         if (!bot.acted.has(key)) {
           bot.acted.add(key);
           const delay = gameStyle === 'aggressive' ? 180 : gameStyle === 'careful' ? 1200 : 450 + rand(900);
