@@ -8,7 +8,7 @@ import { DISCORD_RESULT, completeDiscord, startDiscord } from '../lib/discord';
 import { get } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { toast } from '../lib/toast';
-import { inTelegram, linkInMiniApp } from '../lib/telegram';
+import { inTelegram, signInWithTelegram } from '../lib/telegram';
 import s from './screens.module.css';
 
 export function AuthScreen() {
@@ -22,6 +22,7 @@ export function AuthScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<{ field?: string; message: string } | null>(null);
   const [discordBusy, setDiscordBusy] = useState(false);
+  const [telegramBusy, setTelegramBusy] = useState(false);
   const providers = useLoad(() => get<{ discord: boolean; telegram: { enabled: boolean; bot: string | null } }>('/api/auth/providers'));
 
   if (session) {
@@ -39,7 +40,6 @@ export function AuthScreen() {
           ? await post<{ token: string; user: User }>('/api/auth/register', { handle, password, displayName: name || handle })
           : await post<{ token: string; user: User }>('/api/auth/login', { handle, password });
       setSession({ token: r.token, user: r.user });
-      if (inTelegram()) await linkInMiniApp();
       // "I already play on SHYST" from the Discord return screen: attach that Discord identity now.
       const pending = search.get('discordPending');
       if (pending) {
@@ -152,13 +152,31 @@ export function AuthScreen() {
                 Continue with Discord
               </Button>
             )}
-            {p.telegram.bot && !inTelegram() && (
-              <Button icon="telegram" block onClick={() => window.open(`https://t.me/${p.telegram.bot}`, '_blank', 'noopener')}>
+            {p.telegram.bot && (
+              <Button
+                icon="telegram"
+                block
+                busy={telegramBusy}
+                onClick={async () => {
+                  if (!inTelegram()) {
+                    window.open(`https://t.me/${p.telegram.bot}`, '_blank', 'noopener');
+                    return;
+                  }
+                  setTelegramBusy(true);
+                  try {
+                    await signInWithTelegram();
+                    navigate(next, { replace: true });
+                  } catch (e2) {
+                    toast((e2 as ApiError).message, 'error');
+                    setTelegramBusy(false);
+                  }
+                }}
+              >
                 Continue with Telegram
               </Button>
             )}
             <Text tone="ash" size="sm">
-              Telegram opens the SHYST bot; tap Start to launch the Mini App. Discord and Telegram can both sign in to the same SHYST player.
+              On desktop or mobile web, Telegram opens the SHYST bot; tap Start, then choose Continue with Telegram in the Mini App. You can also use Discord or your username and password.
             </Text>
           </div>
         )}
