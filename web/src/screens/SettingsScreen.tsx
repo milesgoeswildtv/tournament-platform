@@ -14,7 +14,7 @@ import sc from './screens.module.css';
 export function SettingsScreen() {
   const session = useSession();
   const prefs = usePrefs();
-  const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null } }>('/api/me'));
+  const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null }; password: { configured: boolean; handle: string | null } }>('/api/me'));
   const { search } = useLocation();
   const discordNote = DISCORD_RESULT[search.get('discord') ?? ''];
   useEffect(() => {
@@ -25,6 +25,10 @@ export function SettingsScreen() {
   const [dBusy, setDBusy] = useState(false);
   const [linking, setLinking] = useState(false);
   const [name, setName] = useState(session?.user.name ?? '');
+  const [loginHandle, setLoginHandle] = useState(session?.user.handle ?? '');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [passwordBusy, setPasswordBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (!session) return null;
@@ -51,6 +55,27 @@ export function SettingsScreen() {
   };
 
   const tg = me.data?.telegram;
+  const passwordConfigured = me.data?.password?.configured ?? !!session.user.handle;
+  const savePasswordLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    setPasswordBusy(true);
+    try {
+      const r = await post<{ user: User }>('/api/me/password', {
+        handle: loginHandle,
+        password: loginPassword,
+        ...(passwordConfigured ? { currentPassword } : {}),
+      });
+      updateUser(r.user);
+      setLoginPassword('');
+      setCurrentPassword('');
+      await me.reload();
+      toast('Username and password sign-in saved for this SHYST player.', 'good');
+    } catch (e2) {
+      toast((e2 as ApiError).message, 'error');
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
   return (
     <Page>
       <PageHead title="Settings" />
@@ -189,6 +214,42 @@ export function SettingsScreen() {
             )}
           </Stack>
         ) : null}
+      </Section>
+
+      <Section title="Username and password">
+        <Text tone="dust">
+          {passwordConfigured
+            ? 'This player already has a username and password. Changing either keeps the same player ID, history and tournament records.'
+            : 'Add a username and password so you can sign in to this same player from any browser or device.'}
+        </Text>
+        <form onSubmit={savePasswordLogin} className={sc.form}>
+          <TextInput
+            label="Username"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            value={loginHandle}
+            onChange={(e) => setLoginHandle(e.target.value.toLowerCase())}
+            hint="3–20 letters, numbers or underscores."
+          />
+          {passwordConfigured && (
+            <TextInput label="Current password" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+          )}
+          <TextInput
+            label={passwordConfigured ? 'New password' : 'Password'}
+            type="password"
+            autoComplete="new-password"
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+            hint="At least 8 characters."
+          />
+          <div>
+            <Button type="submit" variant="secondary" busy={passwordBusy} disabled={!loginHandle.trim() || loginPassword.length < 8 || (passwordConfigured && !currentPassword)}>
+              {passwordConfigured ? 'Update login' : 'Create username and password'}
+            </Button>
+          </div>
+        </form>
       </Section>
 
       <Section title="Account">
