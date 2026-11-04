@@ -8,7 +8,7 @@ import { Chip, Empty, Page, PageHead, Section, Text } from '../ui/layout';
 import s from './bot-lab.module.css';
 
 type BotStyle = 'random' | 'careful' | 'aggressive' | 'skilled' | 'chaotic';
-type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; ready?: boolean; acted: Set<string> };
+type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; heartbeat?: number; ready?: boolean; acted: Set<string> };
 type Run = { id: string; invite: string; game: GameId; bots: Bot[]; host: WebSocket; started: boolean };
 
 const GAME_NAMES: Record<GameId, string> = {
@@ -57,12 +57,22 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
     const ws = new WebSocket(wsUrl(`/api/tournaments/${tid}/ws`), ['bearer', token]);
     const bot: Bot = { index, handle, token, ws, view: null, acted: new Set() };
     const timeout = window.setTimeout(() => reject(new Error(`${handle} connection timed out`)), 12000);
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
-    ws.onerror = () => { window.clearTimeout(timeout); reject(new Error(`${handle} could not connect`)); };
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
+      // Keep a fresh authoritative view even if a phase-transition broadcast is missed.
+      bot.heartbeat = window.setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
+      }, 2000);
+    };
+    ws.onerror = () => {
+      window.clearTimeout(timeout);
+      if (bot.heartbeat) window.clearInterval(bot.heartbeat);
+      reject(new Error(`${handle} could not connect`));
+    };
     ws.onmessage = (event) => {
       let msg: any;
       try { msg = JSON.parse(String(event.data)); } catch { return; }
-      if (msg.t === 'error') onLog(`${handle}: ${msg.code}`);
+      if (msg.t === 'error') onLog(`${handle}: server rejected ${msg.ref ?? 'message'} (${msg.code})`);
       if (msg.t !== 'state') return;
       bot.view = msg.view as RoomView;
       if (bot.view.phase === 'ROUND' && bot.view.stage && bot.view.me?.status === 'alive' && !bot.view.me.submitted) {
@@ -75,11 +85,14 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
         }
         if (!bot.acted.has(key)) {
           bot.acted.add(key);
+          onLog(`${handle}: detected ${bot.view.stage.gameId}, stage ${bot.view.stage.index}, round ${bot.view.stage.round}; choosing action`);
           const delay = gameStyle === 'aggressive' ? 180 : gameStyle === 'careful' ? 1200 : 450 + rand(900);
           bot.stop = window.setTimeout(() => {
             const v = bot.view;
             if (!v || v.phase !== 'ROUND' || !v.stage || v.stage.index !== bot.view?.stage?.index || v.stage.round !== bot.view?.stage?.round || v.me?.submitted) return;
-            ws.send(JSON.stringify({ t: 'act', stage: v.stage.index, round: v.stage.round, action: actionFor(v.stage.gameId, v, gameStyle) }));
+            const action = actionFor(v.stage.gameId, v, gameStyle);
+            ws.send(JSON.stringify({ t: 'act', stage: v.stage.index, round: v.stage.round, action }));
+            onLog(`${handle}: submitted ${JSON.stringify(action)}`);
           }, delay);
         }
       }
@@ -87,7 +100,10 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
       if (bot.view.phase === 'FINISHED') onLog(`${handle}: tournament finished`);
       if (!bot.ready) { bot.ready = true; window.clearTimeout(timeout); resolve(bot); }
     };
-    ws.onclose = () => { if (bot.stop) window.clearTimeout(bot.stop); };
+    ws.onclose = () => {
+      if (bot.stop) window.clearTimeout(bot.stop);
+      if (bot.heartbeat) window.clearInterval(bot.heartbeat);
+    };
   });
 }
 
