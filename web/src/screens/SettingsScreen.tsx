@@ -294,7 +294,7 @@ export function SettingsScreen() {
           <TextInput label="Issuer secret" type="password" value={issuerSecret} onChange={(e) => setIssuerSecret(e.target.value)} autoComplete="off" />
           <div><Button type="submit" variant="secondary" busy={issueBusy} disabled={!issuerSecret}>Generate SHYST Admin Key</Button></div>
         </form>
-        {issuedKey && <Stack gap={2}><Text tone="good">Copy this key now. It cannot be displayed again.</Text><Text>{issuedKey}</Text><Button variant="ghost" onClick={() => navigator.clipboard?.writeText(issuedKey)}>Copy key</Button></Stack>}
+        {issuedKey && <Stack gap={2}><Text tone="go">Copy this key now. It cannot be displayed again.</Text><Text>{issuedKey}</Text><Button variant="ghost" onClick={() => navigator.clipboard?.writeText(issuedKey)}>Copy key</Button></Stack>}
       </Section>
 
       {!session.user.isAdmin && (
