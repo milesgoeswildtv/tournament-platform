@@ -8,7 +8,7 @@ import { Chip, Empty, Page, PageHead, Section, Text } from '../ui/layout';
 import s from './bot-lab.module.css';
 
 type BotStyle = 'random' | 'careful' | 'aggressive' | 'skilled' | 'chaotic';
-type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; heartbeat?: number; ready?: boolean; pending?: { key: string; kind: 'action' | 'reroll' }; completed: Set<string>; failed: Set<string> };
+type Bot = { index: number; handle: string; token: string; ws: WebSocket; view: RoomView | null; stop?: number; heartbeat?: number; ready?: boolean; pending?: { key: string; kind: 'action' | 'reroll'; sentAt?: number }; ackTimer?: number; attempts: Map<string, number>; completed: Set<string>; failed: Set<string> };
 type Run = { id: string; invite: string; game: GameId; bots: Bot[]; host: WebSocket; started: boolean };
 
 const GAME_NAMES: Record<GameId, string> = {
@@ -55,7 +55,7 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
   const handle = `shystbot_${String(index).padStart(2, '0')}`;
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl(`/api/tournaments/${tid}/ws`), ['bearer', token]);
-    const bot: Bot = { index, handle, token, ws, view: null, completed: new Set(), failed: new Set() };
+    const bot: Bot = { index, handle, token, ws, view: null, attempts: new Map(), completed: new Set(), failed: new Set() };
     const timeout = window.setTimeout(() => reject(new Error(`${handle} connection timed out`)), 12000);
     const ping = () => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
