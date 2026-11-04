@@ -47,6 +47,7 @@ export async function me(c: RouteCtx): Promise<Response> {
     unread: unread?.n ?? 0,
     telegram: { configured: !!c.env.TELEGRAM_BOT_TOKEN, bot: c.env.TELEGRAM_BOT_USERNAME ?? null, linked: !!u.telegram_id, username: u.telegram_username ?? null },
     discord: { configured: discordConfigured(c.env), linked: !!u.discord_id, username: u.discord_username ?? null },
+    password: { configured: !!u.password_hash, handle: u.handle },
   });
 }
 
