@@ -198,6 +198,31 @@ describe('Telegram linking keeps one canonical player', () => {
     assert.deepEqual((await usersWithTg(9109)).map((x) => x.id), [web.user.id]);
   });
 
+  test('a Telegram-created player can add username/password without creating a second player', async () => {
+    const total = await userCount();
+    const tg = new Client(s.url, 'tg');
+    const first = await miniApp(9112, undefined, tg);
+    tg.token = first.data.token;
+    const playerId = first.data.user.id;
+    const handle = uniq('tglogin');
+    const saved = await tg.api('POST', '/api/me/password', { handle, password: 'new-secure-password-42' });
+    assert.equal(saved.status, 200, JSON.stringify(saved.data));
+    assert.equal(saved.data.user.id, playerId);
+    assert.equal(saved.data.user.handle, handle);
+    assert.equal(await userCount(), total + 1, 'credential linking does not create another player');
+
+    const browser = new Client(s.url, 'browser');
+    const login = await browser.api('POST', '/api/auth/login', { handle, password: 'new-secure-password-42' });
+    assert.equal(login.status, 200, JSON.stringify(login.data));
+    assert.equal(login.data.user.id, playerId, 'password login resolves to the same canonical player');
+
+    const denied = await tg.api('POST', '/api/me/password', { handle, password: 'changed-password-43' });
+    assert.equal(denied.status, 401, 'existing credentials cannot be overwritten without the current password');
+    const changed = await tg.api('POST', '/api/me/password', { handle, currentPassword: 'new-secure-password-42', password: 'changed-password-43' });
+    assert.equal(changed.status, 200);
+    assert.equal((await browser.api('POST', '/api/auth/login', { handle, password: 'changed-password-43' })).status, 200);
+  });
+
   test('a person with no SHYST account still gets exactly one Telegram player', async () => {
     const total = await userCount();
     const a = await miniApp(9110);
