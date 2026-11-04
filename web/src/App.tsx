@@ -79,11 +79,11 @@ function Routes() {
     bootTelegram(!!session).then((start) => {
       setBooting(false);
       const code = start?.replace(/^join[_-]?/i, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      if (code && code.length >= 6) navigate(`/j/${code}`, { replace: true });
+      if (code && code.length >= 6) navigate(session ? `/j/${code}` : `/auth?next=${encodeURIComponent(`/j/${code}`)}`, { replace: true });
     });
   }, [booting, session]);
 
-  if (booting) return <Loading label="Signing in with Telegram" />;
+  if (booting) return <Loading label="Opening SHYST in Telegram" />;
 
   for (const r of ROUTES) {
     const params = match(r.pattern, path);
