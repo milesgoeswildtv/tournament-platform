@@ -67,22 +67,6 @@ export function openTelegram(url: string, tab: Window | null = null) {
   else window.location.href = url;
 }
 
-/**
- * Inside the Mini App, after signing in with a username and password, attach
- * this Telegram account to that player (server-verified initData + the new session).
- */
-export async function linkInMiniApp(): Promise<void> {
-  const initData = telegramInitData();
-  if (!initData) return;
-  try {
-    const r = await post<TgAuth>('/api/auth/telegram', { initData });
-    setSession({ token: r.token, user: r.user });
-    reportLink(r.link);
-  } catch {
-    /* sign-in already succeeded; linking can be retried from Settings */
-  }
-}
-
 /** Returns the start parameter (e.g. an invite code) if the app was opened with one. */
 export async function signInWithTelegram(): Promise<TgAuth> {
   const initData = telegramInitData();
