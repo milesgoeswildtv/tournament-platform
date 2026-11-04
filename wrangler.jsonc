@@ -10,7 +10,7 @@
     "ENVIRONMENT": "production",
     "APP_URL": "https://tournament-platform.pages.dev",
     "ALLOWED_ORIGINS": "",
-    "ADMIN_HANDLES": ""
+    "POKER_ACCESS_URL": "https://blackglass-poker-remaster.afterdarklabs.workers.dev"
   },
   "d1_databases": [
     {
@@ -31,7 +31,7 @@
         "APP_URL": "http://localhost:5173",
         "ALLOWED_ORIGINS": "http://localhost:5173,http://127.0.0.1:5173",
         "DEV_TIME_SCALE": "1",
-        "ADMIN_HANDLES": ""
+        "POKER_ACCESS_URL": "https://blackglass-poker-remaster.afterdarklabs.workers.dev"
       },
       "d1_databases": [
         { "binding": "DB", "database_name": "tournament-platform-dev", "database_id": "local", "migrations_dir": "migrations" }
@@ -39,6 +39,6 @@
       "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "TournamentRoom" }] }
     }
   }
-  // Secrets (wrangler secret put …): TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET.
+  // Secrets (wrangler secret put …): TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, SHYST_ADMIN_BRIDGE_SECRET.
   // Plain vars you may add: TELEGRAM_BOT_USERNAME, TELEGRAM_MINIAPP_SHORTNAME.
 }

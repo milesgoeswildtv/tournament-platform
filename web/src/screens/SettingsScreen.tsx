@@ -29,6 +29,8 @@ export function SettingsScreen() {
   const [loginPassword, setLoginPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [passwordBusy, setPasswordBusy] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+  const [adminBusy, setAdminBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (!session) return null;
@@ -45,6 +47,22 @@ export function SettingsScreen() {
       setErr((e2 as ApiError).message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const redeemAdminKey = async (e: FormEvent) => {
+    e.preventDefault();
+    setAdminBusy(true);
+    try {
+      const r = await post<{ ok: boolean; user: User }>('/api/me/admin/redeem', { key: adminKey });
+      updateUser(r.user);
+      setAdminKey('');
+      await me.reload();
+      toast('SHYST admin access activated.', 'good');
+    } catch (e2) {
+      toast((e2 as ApiError).message, 'error');
+    } finally {
+      setAdminBusy(false);
     }
   };
 
@@ -251,6 +269,16 @@ export function SettingsScreen() {
           </div>
         </form>
       </Section>
+
+      {!session.user.isAdmin && (
+        <Section title="Redeem admin key">
+          <Text tone="dust">Enter a SHYST Admin Key issued through Crashout Poker Owner Tools. This grants admin access to this SHYST account only.</Text>
+          <form onSubmit={redeemAdminKey} className={sc.form}>
+            <TextInput label="SHYST Admin Key" value={adminKey} onChange={(e) => setAdminKey(e.target.value.toUpperCase())} autoCapitalize="characters" autoCorrect="off" spellCheck={false} />
+            <div><Button type="submit" variant="secondary" busy={adminBusy} disabled={adminKey.trim().length < 12}>Redeem Code</Button></div>
+          </form>
+        </Section>
+      )}
 
       <Section title="Account">
         <Stack gap={2}>
