@@ -31,14 +31,14 @@ export async function validateInitData(initData: string, botToken: string, maxAg
   const expected = hex(await hmacSha256(new Uint8Array(secret), pairs.join('\n')));
   if (!timingSafeEqual(expected, hash.toLowerCase())) return null;
   const authDate = Number(params.get('auth_date'));
-  if (!Number.isFinite(authDate) || nowMs / 1000 - authDate > maxAgeSec) return null;
+  if (!Number.isFinite(authDate) || authDate > nowMs / 1000 + 60 || nowMs / 1000 - authDate > maxAgeSec) return null;
   let user: TelegramUser;
   try {
     user = JSON.parse(params.get('user') ?? '');
   } catch {
     return null;
   }
-  if (!user || typeof user.id !== 'number') return null;
+  if (!user || typeof user.id !== 'number' || !Number.isSafeInteger(user.id) || user.id <= 0) return null;
   return { user, authDate, startParam: params.get('start_param') };
 }
 
