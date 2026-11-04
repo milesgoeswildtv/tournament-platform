@@ -78,7 +78,7 @@ function Routes() {
     if (!booting) return;
     bootTelegram(!!session).then((start) => {
       setBooting(false);
-      const code = start?.replace(/^join[_-]?/i, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const code = start?.startsWith('link_') ? '' : start?.replace(/^join[_-]?/i, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (code && code.length >= 6) navigate(session ? `/j/${code}` : `/auth?next=${encodeURIComponent(`/j/${code}`)}`, { replace: true });
     });
   }, [booting, session]);
