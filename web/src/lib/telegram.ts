@@ -17,14 +17,20 @@ interface TgWebApp {
 }
 
 const tg = () => (window as unknown as { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp;
+let cachedInitData: string | null = null;
 
 /** Raw initData, from the SDK if loaded or straight from the launch URL hash. */
 export function telegramInitData(): string | null {
   const fromSdk = tg()?.initData;
-  if (fromSdk) return fromSdk;
+  if (fromSdk) {
+    cachedInitData = fromSdk;
+    return fromSdk;
+  }
+  if (cachedInitData) return cachedInitData;
   try {
     const h = new URLSearchParams(window.location.hash.slice(1));
-    return h.get('tgWebAppData');
+    cachedInitData = h.get('tgWebAppData');
+    return cachedInitData;
   } catch {
     return null;
   }
