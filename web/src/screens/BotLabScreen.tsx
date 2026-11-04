@@ -58,7 +58,22 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
     const bot: Bot = { index, handle, token, ws, view: null, attempts: new Map(), completed: new Set(), failed: new Set() };
     const timeout = window.setTimeout(() => reject(new Error(`${handle} connection timed out`)), 12000);
     const ping = () => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'ping', at: Date.now() }));
+      if (ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ t: 'ping', at: Date.now() })); } catch { onLog(`${handle}: heartbeat send failed`); } }
+    };
+    const clearAckTimer = () => { if (bot.ackTimer) { window.clearTimeout(bot.ackTimer); bot.ackTimer = undefined; } };
+    const armAckRecovery = (key: string) => {
+      clearAckTimer();
+      bot.ackTimer = window.setTimeout(() => {
+        if (bot.pending?.key !== key || bot.pending.sentAt === undefined) return;
+        onLog(`${handle}: no confirmation after 5s; refreshing server state`); ping();
+        bot.ackTimer = window.setTimeout(() => {
+          if (bot.pending?.key !== key || bot.pending.sentAt === undefined) return;
+          const attempts = bot.attempts.get(key) ?? 1; bot.pending = undefined;
+          if (attempts >= 3) { bot.failed.add(key); onLog(`${handle}: no confirmation after ${attempts} sends; stopping this round`); return; }
+          bot.attempts.set(key, attempts + 1); onLog(`${handle}: retrying action (${attempts + 1}/3)`); ping();
+          if (bot.view) schedule(bot.view);
+        }, 3000);
+      }, 5000);
     };
     const schedule = (view: RoomView) => {
       const stage = view.stage;
@@ -80,8 +95,9 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
           return;
         }
         const action = kind === 'reroll' ? { type: 'reroll' } : actionFor(latest.stage.gameId, latest, gameStyle);
-        ws.send(JSON.stringify({ t: 'act', stage: stage.index, round: stage.round, action }));
-        onLog(`${handle}: sent ${JSON.stringify(action)}; waiting for server confirmation`);
+        if (ws.readyState !== WebSocket.OPEN) { bot.pending = undefined; onLog(`${handle}: socket closed before action send`); return; }
+        try { ws.send(JSON.stringify({ t: 'act', stage: stage.index, round: stage.round, action })); bot.pending.sentAt = Date.now(); bot.attempts.set(key, (bot.attempts.get(key) ?? 0) + 1); armAckRecovery(key); onLog(`${handle}: sent ${JSON.stringify(action)}; awaiting server confirmation`); }
+        catch { bot.pending = undefined; onLog(`${handle}: action send failed`); }
       }, delay);
     };
     ws.onopen = () => {
@@ -99,6 +115,7 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
       if (msg.t === 'error') {
         if (msg.ref === 'act' && bot.pending) {
           const pending = bot.pending;
+          clearAckTimer();
           bot.pending = undefined;
           const retryable = msg.code === 'rate_limited' || msg.code === 'stale_round' || msg.code === 'round_closed';
           onLog(`${handle}: action rejected (${msg.code})${retryable ? '; refreshing authoritative state' : '; stopping this round'}`);
@@ -118,23 +135,26 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
         const privateState = view.me?.private as any;
         if (bot.pending?.key === key) {
           if (bot.pending.kind === 'reroll' && privateState?.rerolled) {
+            clearAckTimer(); bot.attempts.delete(key);
             bot.completed.add(`${key}:reroll`);
             bot.pending = undefined;
             onLog(`${handle}: reroll accepted by server`);
           } else if (view.me?.submitted) {
+            clearAckTimer(); bot.attempts.delete(key);
             bot.completed.add(key);
             bot.pending = undefined;
             onLog(`${handle}: action accepted and locked by server`);
           }
         }
         if (view.me?.submitted) {
+          clearAckTimer(); bot.attempts.delete(key);
           bot.completed.add(key);
           bot.pending = undefined;
         } else {
           schedule(view);
         }
       } else {
-        bot.pending = undefined;
+        clearAckTimer(); bot.pending = undefined;
         if (bot.stop) { window.clearTimeout(bot.stop); bot.stop = undefined; }
       }
       if (view.phase === 'LOBBY' && !bot.stop) onLog(`${handle} connected`);
@@ -144,6 +164,7 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
     };
     ws.onclose = () => {
       if (bot.stop) window.clearTimeout(bot.stop);
+      clearAckTimer();
       if (bot.heartbeat) window.clearInterval(bot.heartbeat);
     };
   });
