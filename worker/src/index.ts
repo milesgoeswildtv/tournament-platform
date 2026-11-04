@@ -1,10 +1,11 @@
 import { GAME_META } from '../../shared/src/index';
-import { login, logout, register, setPasswordLogin, startTelegramLink, telegramAuth, updateMe, requireUser, publicUser, type UserRow } from './auth';
+import { login, logout, register, setPasswordLogin, startTelegramLink, telegramAuth, updateMe } from './auth';
 import { telegramWebhook } from './bot';
 import { discordCallback, discordComplete, discordConfigured, discordExchange, discordStart } from './discord';
 import type { Env } from './env';
 import { HttpError, Router, corsHeaders, json } from './http';
 import { leaderboard, markNotificationsRead, me, notifications, playerProfile } from './players';
+import { issueAdminKey, redeemAdminKey } from './admin-keys';
 import {
   createTournament,
   currentInvite,
@@ -41,24 +42,8 @@ const router = new Router()
   .get('/api/me', me)
   .patch('/api/me', updateMe)
   .post('/api/me/password', setPasswordLogin)
-  .post('/api/me/admin/redeem', async (c) => {
-    const user = await requireUser(c);
-    const body = await c.req.json().catch(() => ({})) as { key?: unknown };
-    const key = typeof body.key === 'string' ? body.key.trim() : '';
-    if (key.length < 12 || key.length > 100) throw new HttpError(400, 'invalid_key', 'Enter a valid SHYST Admin Key.');
-    if (!c.env.POKER_ACCESS_URL || !c.env.SHYST_ADMIN_BRIDGE_SECRET) throw new HttpError(503, 'admin_redemption_unavailable', 'Admin-key redemption is not configured yet.');
-    const response = await fetch(new URL('/api/access/shyst-admin/redeem', c.env.POKER_ACCESS_URL), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${c.env.SHYST_ADMIN_BRIDGE_SECRET}` },
-      body: JSON.stringify({ key, accountId: user.id }),
-    });
-    const result = await response.json().catch(() => ({})) as { ok?: boolean; error?: string };
-    if (!response.ok || !result.ok) throw new HttpError(response.status === 401 ? 503 : response.status, 'key_redemption_failed', result.error || 'That key could not be redeemed.');
-    await c.env.DB.prepare('UPDATE users SET is_admin = 1, updated_at = ? WHERE id = ? AND merged_into IS NULL').bind(Date.now(), user.id).run();
-    const updated = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(user.id).first<UserRow>();
-    if (!updated) throw new HttpError(500, 'admin_grant_failed', 'Could not reload your account.');
-    return json({ ok: true, user: publicUser(updated) });
-  })
+  .post('/api/me/admin/redeem', redeemAdminKey)
+  .post('/api/admin/keys', issueAdminKey)
   .post('/api/me/telegram/link', startTelegramLink)
   .get('/api/me/notifications', notifications)
   .post('/api/me/notifications/read', markNotificationsRead)

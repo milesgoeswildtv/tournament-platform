@@ -19,7 +19,7 @@ const peek = (tid: string) => () => (server.env.ROOMS.states.get(tid)?.storage a
 const db = () => server.env.DB;
 
 before(async () => {
-  server = await startDevServer({ quiet: true, staticDir: null, timeScale: SCALE, adminHandles: 'auditor' });
+  server = await startDevServer({ quiet: true, staticDir: null, timeScale: SCALE, adminHandles: 'auditor', extraEnv: { SHYST_KEY_ISSUER_SECRET: 'test-only-shyst-issuer-secret' } });
 });
 after(async () => {
   await server.close();
@@ -185,6 +185,31 @@ describe('final acceptance: complete multiplayer tournament', () => {
     const notes = await players[2].api('GET', '/api/me/notifications');
     assert.ok(notes.data.notifications.some((n: any) => n.kind === 'finished'));
     await Promise.all(all.map((c) => c.disconnect()));
+  });
+});
+
+describe('SHYST-native admin keys', () => {
+  test('issues hashed one-time keys and grants admin only to the redeeming account', async () => {
+    const issuer = await Client.register(server.url, handle('keyissuer'), 'Key Issuer');
+    const denied = await issuer.api('POST', '/api/admin/keys', { issuerSecret: 'wrong-secret' });
+    assert.equal(denied.status, 403);
+
+    const issued = await issuer.api('POST', '/api/admin/keys', { issuerSecret: 'test-only-shyst-issuer-secret' });
+    assert.equal(issued.status, 201, JSON.stringify(issued.data));
+    assert.match(issued.data.key, /^SHYST-(?:[A-F0-9]{4}-){11}[A-F0-9]{4}$/);
+
+    const recipient = await Client.register(server.url, handle('keyrecipient'), 'Key Recipient');
+    const redeemed = await recipient.api('POST', '/api/me/admin/redeem', { key: issued.data.key });
+    assert.equal(redeemed.status, 200, JSON.stringify(redeemed.data));
+    assert.equal(redeemed.data.user.isAdmin, true);
+
+    const me = await recipient.api('GET', '/api/me');
+    assert.equal(me.data.user.isAdmin, true);
+
+    const other = await Client.register(server.url, handle('keyother'), 'Other Account');
+    const reused = await other.api('POST', '/api/me/admin/redeem', { key: issued.data.key });
+    assert.equal(reused.status, 403);
+    assert.equal((await other.api('GET', '/api/me')).data.user.isAdmin, false);
   });
 });
 

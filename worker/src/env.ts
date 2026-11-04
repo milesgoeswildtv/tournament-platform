@@ -9,10 +9,8 @@ export interface Env {
   DEV_TIME_SCALE?: string;
   /** Comma-separated extra origins allowed for CORS (local dev). */
   ALLOWED_ORIGINS?: string;
-  /** Poker Worker endpoint used for one-time SHYST admin-key redemption. */
-  POKER_ACCESS_URL?: string;
-  /** Shared server-to-server secret; never exposed to the browser. */
-  SHYST_ADMIN_BRIDGE_SECRET?: string;
+  /** Owner-only secret required to issue SHYST admin keys. */
+  SHYST_KEY_ISSUER_SECRET?: string;
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_BOT_USERNAME?: string;
   TELEGRAM_WEBHOOK_SECRET?: string;

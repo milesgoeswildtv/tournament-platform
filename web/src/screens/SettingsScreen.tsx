@@ -31,6 +31,9 @@ export function SettingsScreen() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [adminKey, setAdminKey] = useState('');
   const [adminBusy, setAdminBusy] = useState(false);
+  const [issuerSecret, setIssuerSecret] = useState('');
+  const [issueBusy, setIssueBusy] = useState(false);
+  const [issuedKey, setIssuedKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (!session) return null;
@@ -63,6 +66,21 @@ export function SettingsScreen() {
       toast((e2 as ApiError).message, 'error');
     } finally {
       setAdminBusy(false);
+    }
+  };
+
+  const issueAdminKey = async (e: FormEvent) => {
+    e.preventDefault();
+    setIssueBusy(true);
+    try {
+      const r = await post<{ key: string }>('/api/admin/keys', { issuerSecret });
+      setIssuedKey(r.key);
+      setIssuerSecret('');
+      toast('SHYST admin key created. Copy it now; it is shown only once.', 'good');
+    } catch (e2) {
+      toast((e2 as ApiError).message, 'error');
+    } finally {
+      setIssueBusy(false);
     }
   };
 
@@ -270,9 +288,18 @@ export function SettingsScreen() {
         </form>
       </Section>
 
+      <Section title="Issue SHYST admin key">
+        <Text tone="dust">Owner-only. Enter the SHYST key-issuer secret configured on the Worker. The generated key is shown once and expires after 90 days.</Text>
+        <form onSubmit={issueAdminKey} className={sc.form}>
+          <TextInput label="Issuer secret" type="password" value={issuerSecret} onChange={(e) => setIssuerSecret(e.target.value)} autoComplete="off" />
+          <div><Button type="submit" variant="secondary" busy={issueBusy} disabled={!issuerSecret}>Generate SHYST Admin Key</Button></div>
+        </form>
+        {issuedKey && <Stack gap={2}><Text tone="go">Copy this key now. It cannot be displayed again.</Text><Text>{issuedKey}</Text><Button variant="ghost" onClick={() => navigator.clipboard?.writeText(issuedKey)}>Copy key</Button></Stack>}
+      </Section>
+
       {!session.user.isAdmin && (
         <Section title="Redeem admin key">
-          <Text tone="dust">Enter a SHYST Admin Key issued through Crashout Poker Owner Tools. This grants admin access to this SHYST account only.</Text>
+          <Text tone="dust">Enter a SHYST Admin Key. It grants admin access to this SHYST account only; keys are issued independently by SHYST.</Text>
           <form onSubmit={redeemAdminKey} className={sc.form}>
             <TextInput label="SHYST Admin Key" value={adminKey} onChange={(e) => setAdminKey(e.target.value.toUpperCase())} autoCapitalize="characters" autoCorrect="off" spellCheck={false} />
             <div><Button type="submit" variant="secondary" busy={adminBusy} disabled={adminKey.trim().length < 12}>Redeem Code</Button></div>
