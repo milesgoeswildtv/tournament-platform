@@ -33,7 +33,7 @@ const errs: string[] = [];
 page.on('pageerror', (e) => errs.push(String(e)));
 await page.route('https://telegram.org/**', (r) => r.abort());
 await page.goto(`${server.url}/#tgWebAppData=${encodeURIComponent(initData)}&tgWebAppVersion=8.0&tgWebAppPlatform=ios`);
-await page.waitForURL(new RegExp(`${server.url.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\await page.waitForURL(`${server.url}/j/${t.invite.code}`, { timeout: 10000 });')}/auth\\\\?next=`), { timeout: 10000 });
+await page.waitForURL((url) => url.pathname === '/auth' && url.searchParams.has('next'), { timeout: 10000 });
 await page.getByRole('button', { name: 'Continue with Telegram' }).click();
 await page.waitForURL(`${server.url}/j/${t.invite.code}`, { timeout: 10000 });
 await page.getByRole('button', { name: 'Join tournament' }).click();
