@@ -37,7 +37,8 @@ class MusicController {
   private manualPause = false;
   private failedTracks = new Set<string>();
   private unlocked = false;
-  private shuffle = false;\n  private snapshot: Snapshot = { track: null, playing: false, screen: 'lobby', available: 0, shuffle: false };
+  private shuffle = false;
+  private snapshot: Snapshot = { track: null, playing: false, screen: 'lobby', available: 0, shuffle: false };
 
   private audioElement() {
     if (!this.element && typeof Audio !== 'undefined') {
