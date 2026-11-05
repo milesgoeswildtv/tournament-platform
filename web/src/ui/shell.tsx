@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
-import { IconButton, fieldStyles } from './controls';
+import { IconButton } from './controls';
 import { Link, useLocation } from '../lib/router';
 import { useToasts, dismiss } from '../lib/toast';
 import { usePrefs, setPrefs } from '../lib/prefs';
