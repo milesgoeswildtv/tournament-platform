@@ -121,6 +121,11 @@ class MusicController {
     else if (el) el.volume = v;
   }
 
+  toggleShuffle() {
+    this.shuffle = !this.shuffle;
+    this.publish();
+  }
+
   togglePlayback() {
     if (!getPrefs().music) return;
     const el = this.audioElement();
