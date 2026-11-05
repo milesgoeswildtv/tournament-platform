@@ -5,7 +5,7 @@ import { useRoom } from '../lib/room';
 import { useWide } from '../lib/media';
 import { navigate } from '../lib/router';
 import { useLoad } from '../lib/useLoad';
-import { audio } from '../lib/audio';
+import { audio } from '../lib/audio';\nimport { music } from '../lib/music';
 import { toast } from '../lib/toast';
 import { Button, IconButton } from '../ui/controls';
 import { Chip, Loading, Stack, StatusScreen, Text, Who } from '../ui/layout';
@@ -108,7 +108,7 @@ function Room({ id }: { id: string }) {
     prevPhase.current = view.phase;
   }, [view]);
 
-  if (!view) {
+  if (!view) {\n    music.setScreen('lobby');
     return status === 'refused' ? (
       <StatusScreen
         title="Can’t enter the room"
