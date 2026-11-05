@@ -130,7 +130,7 @@ await A.waitForURL(`${APP}/`);
 await A.getByText('Join with a code').waitFor();
 await A.waitForFunction(() => (window as any).__shystMusicStarts?.some(
   (item: { src: string; readyState: number }) => item.src.includes('/music/underground/') && item.readyState >= 2,
-), { timeout: 15_000 });
+), undefined, { timeout: 15_000 });
 const musicStarts = await A.evaluate(() => (window as any).__shystMusicStarts as { src: string; readyState: number }[]);
 assert.ok(musicStarts.some((item) => item.src.includes('/music/underground/') && item.readyState >= 2),
   'music must load and emit a real playing event after the first user gesture');
