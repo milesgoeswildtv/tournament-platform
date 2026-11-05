@@ -2,14 +2,11 @@ import { getPrefs } from './prefs';
 import { music } from './music';
 
 /**
- * Sound, generated in the browser with WebAudio — no audio files, nothing to
- * license. Music is a low industrial loop (drone, room tone, a slow kick and
- * a shaker); effects are short synthesized cues for game moments.
+ * Short game sound effects are synthesized with WebAudio. Music playback is
+ * handled separately by the configurable track player.
  * Browsers only allow audio after a tap, so everything starts lazily.
  */
 type Sfx = 'tap' | 'lock' | 'tick' | 'reveal' | 'out' | 'safe' | 'start' | 'cash' | 'burst';
-
-const ROOTS = [55, 49, 58.27, 43.65];
 
 class Engine {
   private ctx: AudioContext | null = null;
