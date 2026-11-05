@@ -1,22 +1,18 @@
 import { getPrefs } from './prefs';
+import { music } from './music';
 
 /**
- * Sound, generated in the browser with WebAudio — no audio files, nothing to
- * license. Music is a low industrial loop (drone, room tone, a slow kick and
- * a shaker); effects are short synthesized cues for game moments.
+ * Short game sound effects are synthesized with WebAudio. Music playback is
+ * handled separately by the configurable track player.
  * Browsers only allow audio after a tap, so everything starts lazily.
  */
 type Sfx = 'tap' | 'lock' | 'tick' | 'reveal' | 'out' | 'safe' | 'start' | 'cash' | 'burst';
 
-const ROOTS = [55, 49, 58.27, 43.65];
-
 class Engine {
   private ctx: AudioContext | null = null;
   private master!: GainNode;
-  private musicBus!: GainNode;
   private sfxBus!: GainNode;
   private noise!: AudioBuffer;
-  private music: { stop: () => void } | null = null;
 
   private ensure(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -24,12 +20,10 @@ class Engine {
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return null;
       this.ctx = new AC();
+      music.connectAudioContext(this.ctx);
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.9;
       this.master.connect(this.ctx.destination);
-      this.musicBus = this.ctx.createGain();
-      this.musicBus.gain.value = 0;
-      this.musicBus.connect(this.master);
       this.sfxBus = this.ctx.createGain();
       this.sfxBus.gain.value = 0.5;
       this.sfxBus.connect(this.master);
@@ -45,105 +39,16 @@ class Engine {
   /** Call from any user gesture so later cues are allowed to play. */
   unlock() {
     this.ensure();
-    this.syncMusic();
+    music.unlock();
   }
 
   get musicPlaying() {
-    return !!this.music;
+    return music.getSnapshot().playing;
   }
 
-  syncMusic() {
-    const p = getPrefs();
-    if (p.music) this.startMusic(p.musicVolume);
-    else this.stopMusic();
-  }
+  syncMusic() { music.sync(); }
 
-  setMusicVolume(v: number) {
-    if (this.ctx && this.music) this.musicBus.gain.setTargetAtTime(v * 0.5, this.ctx.currentTime, 0.2);
-  }
-
-  private startMusic(volume: number) {
-    const ctx = this.ensure();
-    if (!ctx) return;
-    this.musicBus.gain.setTargetAtTime(volume * 0.5, ctx.currentTime, 0.6);
-    if (this.music) return;
-
-    const t0 = ctx.currentTime + 0.05;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 220;
-    lp.Q.value = 6;
-    lp.connect(this.musicBus);
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.045;
-    lfoGain.gain.value = 120;
-    lfo.connect(lfoGain).connect(lp.frequency);
-    lfo.start(t0);
-
-    const droneGain = ctx.createGain();
-    droneGain.gain.value = 0.22;
-    droneGain.connect(lp);
-    const oscs = [0, 0.4, -0.3].map((detune, i) => {
-      const o = ctx.createOscillator();
-      o.type = i === 2 ? 'square' : 'sawtooth';
-      o.frequency.value = ROOTS[0] * (i === 2 ? 0.5 : 1) + detune;
-      o.connect(droneGain);
-      o.start(t0);
-      return o;
-    });
-
-    const room = ctx.createBufferSource();
-    room.buffer = this.noise;
-    room.loop = true;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 700;
-    bp.Q.value = 0.6;
-    const roomGain = ctx.createGain();
-    roomGain.gain.value = 0.035;
-    room.connect(bp).connect(roomGain).connect(this.musicBus);
-    room.start(t0);
-
-    const bpm = 86;
-    const beat = 60 / bpm;
-    let next = t0;
-    let step = 0;
-    const schedule = () => {
-      while (next < ctx.currentTime + 0.25) {
-        const bar = Math.floor(step / 8);
-        const pos = step % 8; // eighth notes
-        if (pos === 0 || pos === 5) this.kick(next, 0.55);
-        if (pos % 2 === 1) this.hat(next, pos === 3 || pos === 7 ? 0.05 : 0.025);
-        if (pos === 4 && bar % 4 === 3) this.clank(next);
-        if (pos === 0 && bar % 8 === 0) {
-          const root = ROOTS[(bar / 8) % ROOTS.length];
-          oscs.forEach((o, i) => o.frequency.setTargetAtTime(root * (i === 2 ? 0.5 : 1) + [0, 0.4, -0.3][i], next, 0.8));
-        }
-        next += beat / 2;
-        step++;
-      }
-    };
-    schedule();
-    const timer = window.setInterval(schedule, 60);
-    this.music = {
-      stop: () => {
-        window.clearInterval(timer);
-        const t = ctx.currentTime;
-        this.musicBus.gain.setTargetAtTime(0, t, 0.3);
-        window.setTimeout(() => {
-          oscs.forEach((o) => o.stop());
-          lfo.stop();
-          room.stop();
-        }, 1500);
-      },
-    };
-  }
-
-  private stopMusic() {
-    this.music?.stop();
-    this.music = null;
-  }
+  setMusicVolume(v: number) { music.setVolume(v); }
 
   private env(t: number, peak: number, attack: number, decay: number, bus: AudioNode): GainNode {
     const g = this.ctx!.createGain();
@@ -159,7 +64,7 @@ class Engine {
     const o = ctx.createOscillator();
     o.frequency.setValueAtTime(110, t);
     o.frequency.exponentialRampToValueAtTime(42, t + 0.18);
-    o.connect(this.env(t, vol, 0.005, 0.32, this.musicBus));
+    o.connect(this.env(t, vol, 0.005, 0.32, this.sfxBus));
     o.start(t);
     o.stop(t + 0.4);
   }
@@ -175,14 +80,6 @@ class Engine {
     s.connect(f).connect(this.env(t, vol, 0.002, decay, bus));
     s.start(t, Math.random());
     s.stop(t + decay + 0.05);
-  }
-
-  private hat(t: number, vol: number) {
-    this.noiseHit(t, vol, 'highpass', 7000, 0.05, this.musicBus);
-  }
-
-  private clank(t: number) {
-    this.noiseHit(t, 0.06, 'bandpass', 1250, 0.4, this.musicBus);
   }
 
   private tone(t: number, freq: number, vol: number, decay: number, type: OscillatorType = 'square', glideTo?: number) {

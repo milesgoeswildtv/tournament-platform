@@ -4,6 +4,7 @@ import { get, useSession, updateUser } from './lib/api';
 import { bootTelegram, inTelegram } from './lib/telegram';
 import { AppShell, OfflineBanner, Toasts } from './ui/shell';
 import { Loading } from './ui/layout';
+import { music } from './lib/music';
 import { AuthScreen } from './screens/AuthScreen';
 import { DiscordScreen } from './screens/DiscordScreen';
 import { HubScreen } from './screens/HubScreen';
@@ -73,6 +74,10 @@ function Routes() {
   const { path } = useLocation();
   const [booting, setBooting] = useState(inTelegram());
   const unread = useUnread(!!session, path);
+
+  useEffect(() => {
+    if (!path.startsWith('/t/') || path.slice(3).includes('/')) music.setScreen('lobby');
+  }, [path]);
 
   useEffect(() => {
     if (!booting) return;

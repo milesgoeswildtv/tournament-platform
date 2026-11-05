@@ -4,13 +4,15 @@ import { useSyncExternalStore } from 'react';
 export interface Prefs {
   music: boolean;
   musicVolume: number; // 0..1
+  lobbyMusicCategories: ('underground' | 'drift' | 'oddity')[];
+  gameplayMusicCategories: ('underground' | 'drift' | 'oddity')[];
   sfx: boolean;
   haptics: boolean;
   motion: 'system' | 'reduced';
 }
 
 const KEY = 'tp.prefs.v1';
-const DEFAULTS: Prefs = { music: false, musicVolume: 0.4, sfx: true, haptics: true, motion: 'system' };
+const DEFAULTS: Prefs = { music: false, musicVolume: 0.4, lobbyMusicCategories: ['underground'], gameplayMusicCategories: ['oddity'], sfx: true, haptics: true, motion: 'system' };
 
 function load(): Prefs {
   try {

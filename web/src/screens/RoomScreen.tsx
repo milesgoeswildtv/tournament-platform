@@ -6,6 +6,7 @@ import { useWide } from '../lib/media';
 import { navigate } from '../lib/router';
 import { useLoad } from '../lib/useLoad';
 import { audio } from '../lib/audio';
+import { music } from '../lib/music';
 import { toast } from '../lib/toast';
 import { Button, IconButton } from '../ui/controls';
 import { Chip, Loading, Stack, StatusScreen, Text, Who } from '../ui/layout';
@@ -101,6 +102,7 @@ function Room({ id }: { id: string }) {
 
   useEffect(() => {
     if (!view) return;
+    music.setScreen(view.phase === 'LOBBY' ? 'lobby' : 'gameplay');
     if (prevPhase.current && prevPhase.current !== view.phase) {
       if (view.phase === 'COUNTDOWN') audio.play('start');
       if (view.phase === 'FINISHED') audio.play('safe');
