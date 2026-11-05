@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import { IconButton } from './controls';
 import { Link, useLocation } from '../lib/router';
 import { useToasts, dismiss } from '../lib/toast';
-import { setPrefs, usePrefs } from '../lib/prefs';
+import { usePrefs, setPrefs } from '../lib/prefs';
 import { audio } from '../lib/audio';
+import { music } from '../lib/music';
 import { TapeMark } from './venue';
 import s from './shell.module.css';
 
@@ -24,23 +25,71 @@ const RAIL: typeof TABS = [
   { to: '/settings', label: 'Settings', icon: 'settings', match: /^\/settings/ },
 ];
 
-/** The SHYST wordmark: stencil on a strip of tape. */
 export function Wordmark() {
   return <TapeMark to="/" />;
 }
 
-export function MusicButton() {
-  const p = usePrefs();
+function HeaderMusicPlayer() {
+  const prefs = usePrefs();
+  const player = useSyncExternalStore(music.subscribe, music.getSnapshot, music.getSnapshot);
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [open]);
+
+  const changeVolume = (value: number) => {
+    setPrefs({ musicVolume: value });
+    audio.setMusicVolume(value);
+  };
+
   return (
-    <IconButton
-      icon="music"
-      label={p.music ? 'Turn music off' : 'Turn music on'}
-      pressed={p.music}
-      onClick={() => {
-        setPrefs({ music: !p.music });
-        audio.syncMusic();
-      }}
-    />
+    <div className={s.musicDock} ref={root}>
+      <IconButton
+        icon="music"
+        label={open ? 'Close music player' : 'Open music player'}
+        pressed={open || player.playing}
+        className={s.musicTrigger}
+        onClick={() => setOpen((value) => !value)}
+      />
+      {open && (
+        <section className={s.musicPopover} aria-label="Music player">
+          <div className={s.musicPopoverHead}>
+            <div className={s.musicPopoverTitle}>NOW PLAYING</div>
+            <span className={s.musicStatus}>{player.playing ? 'PLAYING' : prefs.music ? 'READY' : 'MUSIC OFF'}</span>
+          </div>
+          <div className={s.musicTrack}>
+            <b title={player.track?.title ?? undefined}>{player.track?.title ?? 'No track selected'}</b>
+            <span>{player.track ? player.track.category.toUpperCase() : 'Enable music in Settings'}</span>
+          </div>
+          <div className={s.musicActions}>
+            <button type="button" aria-label="Previous track" title="Previous" disabled={!player.available} onClick={() => music.previous()}><Icon name="back" /></button>
+            <button type="button" className={s.musicPlay} aria-label={player.playing ? 'Pause music' : 'Play music'} disabled={!player.available} onClick={() => { if (!prefs.music) { setPrefs({ music: true }); audio.syncMusic(); } else music.togglePlayback(); }}><Icon name={player.playing ? 'pause' : 'play'} size={21} /></button>
+            <button type="button" aria-label="Next track" title="Next" disabled={!player.available} onClick={() => music.next()}><Icon name="next" /></button>
+            <button type="button" aria-label={player.shuffle ? 'Turn shuffle off' : 'Turn shuffle on'} aria-pressed={player.shuffle} title="Shuffle" onClick={() => music.toggleShuffle()}><Icon name="shuffle" /></button>
+          </div>
+          <label className={s.musicVolume}>
+            <span>VOLUME</span>
+            <input aria-label="Music volume" type="range" min="0" max="1" step="0.05" value={prefs.musicVolume} onChange={(event) => changeVolume(Number(event.target.value))} />
+            <output>{Math.round(prefs.musicVolume * 100)}%</output>
+          </label>
+          {!prefs.music && <p className={s.musicHint}>Turn Music on in Settings to start playback.</p>}
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -60,14 +109,14 @@ export function AppShell({ children, unread = 0 }: { children: ReactNode; unread
           ))}
         </nav>
         <div className={s.railFoot}>
-          <MusicButton />
+          <HeaderMusicPlayer />
           <IconButton icon="bell" label="Notifications" to="/me#inbox" badge={unread} />
         </div>
       </aside>
       <header className={s.top}>
         <Wordmark />
         <div className={s.topActions}>
-          <MusicButton />
+          <HeaderMusicPlayer />
           <IconButton icon="library" label="Game library" to="/games" />
           <IconButton icon="settings" label="Settings" to="/settings" badge={0} />
         </div>
