@@ -19,6 +19,8 @@ type Snapshot = { track: MusicTrack | null; playing: boolean; screen: MusicScree
 
 class MusicController {
   private element: HTMLAudioElement | null = null;
+  private gain: GainNode | null = null;
+  private source: MediaElementAudioSourceNode | null = null;
   private screen: MusicScreen = 'lobby';
   private current: MusicTrack | null = null;
   private listeners = new Set<() => void>();
@@ -60,6 +62,21 @@ class MusicController {
   subscribe = (fn: () => void) => { this.listeners.add(fn); return () => this.listeners.delete(fn); };
   getSnapshot = () => this.snapshot;
 
+  connectAudioContext(context: AudioContext) {
+    const el = this.audioElement();
+    if (!el || this.source) return;
+    try {
+      this.source = context.createMediaElementSource(el);
+      this.gain = context.createGain();
+      this.gain.gain.value = getPrefs().musicVolume;
+      this.source.connect(this.gain).connect(context.destination);
+      el.volume = 1;
+    } catch {
+      this.source = null;
+      this.gain = null;
+    }
+  }
+
   unlock() { this.unlocked = true; this.sync(); }
 
   setScreen(screen: MusicScreen) {
@@ -74,7 +91,8 @@ class MusicController {
     const el = this.audioElement();
     if (!el) return;
     const p = getPrefs();
-    el.volume = Math.max(0, Math.min(1, p.musicVolume));
+    if (this.gain) this.gain.gain.setTargetAtTime(Math.max(0, Math.min(1, p.musicVolume)), this.gain.context.currentTime, 0.04);
+    else el.volume = Math.max(0, Math.min(1, p.musicVolume));
     if (!p.music) { el.pause(); this.publish(); return; }
     const list = this.playlist();
     if (this.current && list.some((track) => track.id === this.current!.id)) {
@@ -85,7 +103,12 @@ class MusicController {
     this.select(list[0] ?? null, true);
   }
 
-  setVolume(value: number) { const el = this.audioElement(); if (el) el.volume = Math.max(0, Math.min(1, value)); }
+  setVolume(value: number) {
+    const v = Math.max(0, Math.min(1, value));
+    const el = this.audioElement();
+    if (this.gain) this.gain.gain.setTargetAtTime(v, this.gain.context.currentTime, 0.04);
+    else if (el) el.volume = v;
+  }
 
   togglePlayback() {
     if (!getPrefs().music) return;
@@ -127,7 +150,8 @@ class MusicController {
     if (!track) { el.removeAttribute('src'); el.load(); this.publish(); return; }
     el.src = track.src;
     el.load();
-    el.volume = getPrefs().musicVolume;
+    if (this.gain) this.gain.gain.setTargetAtTime(getPrefs().musicVolume, this.gain.context.currentTime, 0.04);
+    else el.volume = getPrefs().musicVolume;
     const shouldPlay = getPrefs().music && this.unlocked && !this.manualPause && (!preservePause || wasPlaying || !this.snapshot.track);
     if (shouldPlay) void el.play().catch(() => this.publish());
     this.publish();
