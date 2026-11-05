@@ -3,7 +3,9 @@ import { useSyncExternalStore } from 'react';
 /** Per-device preferences. Conveniences only, so storage failures are harmless. */
 export interface Prefs {
   music: boolean;
-  musicVolume: number; // 0..1\n  lobbyMusicCategories: ('underground' | 'drift' | 'oddity')[];\n  gameplayMusicCategories: ('underground' | 'drift' | 'oddity')[]
+  musicVolume: number; // 0..1
+  lobbyMusicCategories: ('underground' | 'drift' | 'oddity')[];
+  gameplayMusicCategories: ('underground' | 'drift' | 'oddity')[]
   sfx: boolean;
   haptics: boolean;
   motion: 'system' | 'reduced';
