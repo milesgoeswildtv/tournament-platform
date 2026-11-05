@@ -44,6 +44,7 @@ class MusicController {
   private unlocked = false;
   private shuffle = false;
   private playbackError: string | null = null;
+  private isPlaying = false;
   private snapshot: Snapshot = {
     track: null, playing: false, screen: 'lobby', available: 0, shuffle: false, error: null,
   };
@@ -54,12 +55,10 @@ class MusicController {
       const el = new Audio();
       el.preload = 'auto';
       el.playsInline = true;
-      el.addEventListener('play', () => {
-        this.playbackError = null;
-        this.publish();
-      });
-      el.addEventListener('playing', () => this.publish());
-      el.addEventListener('pause', () => this.publish());
+      el.addEventListener('play', () => { this.playbackError = null; });
+      el.addEventListener('playing', () => { this.isPlaying = true; this.publish(); });
+      el.addEventListener('pause', () => { this.isPlaying = false; this.publish(); });
+      el.addEventListener('waiting', () => { this.isPlaying = false; this.publish(); });
       el.addEventListener('ended', () => this.next());
       el.addEventListener('error', () => this.handleTrackError());
       this.element = el;
@@ -81,7 +80,7 @@ class MusicController {
     const el = this.element;
     this.snapshot = {
       track: this.current,
-      playing: !!el && !el.paused && !el.ended,
+      playing: this.isPlaying && !!el && !el.paused && !el.ended,
       screen: this.screen,
       available: this.playlist().length,
       shuffle: this.shuffle,
@@ -233,6 +232,7 @@ class MusicController {
     const hadTrack = !!this.current;
 
     el.pause();
+    this.isPlaying = false;
     this.current = track;
     this.playbackError = null;
 
