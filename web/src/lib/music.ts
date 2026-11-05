@@ -25,7 +25,7 @@ export const MUSIC_LIBRARY: MusicTrack[] = [
   { id: 'oddity-parasite-radio', title: 'PARASITE RADIO', category: 'oddity', src: '/music/oddity/PARASITE%20RADIO%20-%20LOST%20CRASHOUT.mp3' },
 ];
 
-type Snapshot = { track: MusicTrack | null; playing: boolean; screen: MusicScreen; available: number };
+type Snapshot = { track: MusicTrack | null; playing: boolean; screen: MusicScreen; available: number; shuffle: boolean };
 
 class MusicController {
   private element: HTMLAudioElement | null = null;
@@ -37,7 +37,7 @@ class MusicController {
   private manualPause = false;
   private failedTracks = new Set<string>();
   private unlocked = false;
-  private snapshot: Snapshot = { track: null, playing: false, screen: 'lobby', available: 0 };
+  private shuffle = false;\n  private snapshot: Snapshot = { track: null, playing: false, screen: 'lobby', available: 0, shuffle: false };
 
   private audioElement() {
     if (!this.element && typeof Audio !== 'undefined') {
@@ -65,7 +65,7 @@ class MusicController {
 
   private publish() {
     const el = this.element;
-    this.snapshot = { track: this.current, playing: !!el && !el.paused && !el.ended, screen: this.screen, available: this.playlist().length };
+    this.snapshot = { track: this.current, playing: !!el && !el.paused && !el.ended, screen: this.screen, available: this.playlist().length, shuffle: this.shuffle };
     this.listeners.forEach((fn) => fn());
   }
 
@@ -138,7 +138,7 @@ class MusicController {
     const list = this.playlist();
     if (!list.length) return this.select(null, false);
     const index = this.current ? list.findIndex((track) => track.id === this.current!.id) : -1;
-    const nextIndex = list.length > 1 ? (index + 1 + Math.floor(Math.random() * (list.length - 1))) % list.length : 0;
+    const nextIndex = list.length > 1 ? (this.shuffle ? (index + 1 + Math.floor(Math.random() * (list.length - 1))) % list.length : (index + 1) % list.length) : 0;
     this.manualPause = false;
     this.select(list[nextIndex], false);
   }
