@@ -77,7 +77,7 @@ function HeaderMusicPlayer() {
           </div>
           <div className={s.musicActions}>
             <button type="button" aria-label="Previous track" title="Previous" disabled={!player.available} onClick={() => music.previous()}><Icon name="back" /></button>
-            <button type="button" className={s.musicPlay} aria-label={player.playing ? 'Pause music' : 'Play music'} disabled={!prefs.music || !player.available} onClick={() => music.togglePlayback()}><Icon name={player.playing ? 'pause' : 'play'} size={21} /></button>
+            <button type="button" className={s.musicPlay} aria-label={player.playing ? 'Pause music' : 'Play music'} disabled={!player.available} onClick={() => { if (!prefs.music) { setPrefs({ music: true }); audio.syncMusic(); } else music.togglePlayback(); }}><Icon name={player.playing ? 'pause' : 'play'} size={21} /></button>
             <button type="button" aria-label="Next track" title="Next" disabled={!player.available} onClick={() => music.next()}><Icon name="next" /></button>
             <button type="button" aria-label={player.shuffle ? 'Turn shuffle off' : 'Turn shuffle on'} aria-pressed={player.shuffle} title="Shuffle" onClick={() => music.toggleShuffle()}><Icon name="shuffle" /></button>
           </div>
