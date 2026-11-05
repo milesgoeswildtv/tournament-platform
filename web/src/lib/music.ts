@@ -54,7 +54,6 @@ class MusicController {
     if (!this.element) {
       const el = new Audio();
       el.preload = 'auto';
-      el.playsInline = true;
       el.addEventListener('play', () => { this.playbackError = null; });
       el.addEventListener('playing', () => { this.isPlaying = true; this.publish(); });
       el.addEventListener('pause', () => { this.isPlaying = false; this.publish(); });
