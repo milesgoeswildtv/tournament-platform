@@ -38,7 +38,6 @@ class Engine {
   /** Call from any user gesture so later cues are allowed to play. */
   unlock() {
     this.ensure();
-    music.unlock();
   }
 
   get musicPlaying() {
