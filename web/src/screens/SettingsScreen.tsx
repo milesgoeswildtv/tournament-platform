@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ApiError, get, patch, post, setSession, updateUser, useSession, type User } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { setPrefs, usePrefs } from '../lib/prefs';
-import { audio } from '../lib/audio';
+import { audio } from '../lib/audio';\nimport { MUSIC_CATEGORIES, music, type MusicCategory } from '../lib/music';\nimport { useSyncExternalStore } from 'react';
 import { navigate, useLocation } from '../lib/router';
 import { DISCORD_RESULT, startDiscord } from '../lib/discord';
 import { toast } from '../lib/toast';
@@ -13,7 +13,7 @@ import sc from './screens.module.css';
 
 export function SettingsScreen() {
   const session = useSession();
-  const prefs = usePrefs();
+  const prefs = usePrefs();\n  const player = useSyncExternalStore(music.subscribe, music.getSnapshot, music.getSnapshot);
   const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null }; password: { configured: boolean; handle: string | null } }>('/api/me'));
   const { search } = useLocation();
   const discordNote = DISCORD_RESULT[search.get('discord') ?? ''];
@@ -154,6 +154,42 @@ export function SettingsScreen() {
             }}
           />
         </Field>
+        <div className={sc.musicPlayer} aria-live="polite">
+          <div className={sc.musicNow}>
+            <span className={sc.musicEyebrow}>{player.screen === 'lobby' ? 'PRE-GAME' : 'GAMEPLAY'} MUSIC</span>
+            <b>{player.track?.title ?? (player.available ? 'Ready to play' : 'No tracks loaded yet')}</b>
+            <span>{player.track ? MUSIC_CATEGORIES.find((c) => c.id === player.track?.category)?.label : 'Add audio files to the music library when ready.'}</span>
+          </div>
+          <div className={sc.musicControls}>
+            <Button size="sm" variant="secondary" icon="back" disabled={!player.available} onClick={() => music.previous()}>Previous</Button>
+            <Button size="sm" variant="primary" icon={player.playing ? 'pause' : 'play'} disabled={!prefs.music || !player.available} onClick={() => music.togglePlayback()}>{player.playing ? 'Pause' : 'Resume'}</Button>
+            <Button size="sm" variant="secondary" icon="next" disabled={!player.available} onClick={() => music.next()}>Skip</Button>
+          </div>
+        </div>
+        <div className={sc.musicRouting}>
+          <div>
+            <h3>Pre-game / lobby</h3>
+            <p>Choose which music categories can play while players are waiting.</p>
+            {MUSIC_CATEGORIES.map((category) => (
+              <Toggle key={category.id} checked={prefs.lobbyMusicCategories.includes(category.id)} onChange={(checked) => {
+                const values = checked ? [...prefs.lobbyMusicCategories, category.id] : prefs.lobbyMusicCategories.filter((id) => id !== category.id);
+                setPrefs({ lobbyMusicCategories: values as MusicCategory[] });
+                music.sync();
+              }} label={category.label} hint={category.description} />
+            ))}
+          </div>
+          <div>
+            <h3>Gameplay</h3>
+            <p>Independent selection for active tournament stages.</p>
+            {MUSIC_CATEGORIES.map((category) => (
+              <Toggle key={category.id} checked={prefs.gameplayMusicCategories.includes(category.id)} onChange={(checked) => {
+                const values = checked ? [...prefs.gameplayMusicCategories, category.id] : prefs.gameplayMusicCategories.filter((id) => id !== category.id);
+                setPrefs({ gameplayMusicCategories: values as MusicCategory[] });
+                music.sync();
+              }} label={category.label} hint={category.description} />
+            ))}
+          </div>
+        </div>
         <Toggle checked={prefs.sfx} onChange={(v) => setPrefs({ sfx: v })} label="Game sounds" hint="Ticks, lock-ins and reveals." />
         <Toggle checked={prefs.haptics} onChange={(v) => setPrefs({ haptics: v })} label="Vibration" hint="On phones that support it, and inside Telegram." />
         <Field label="Motion">
