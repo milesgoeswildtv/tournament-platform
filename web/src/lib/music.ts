@@ -121,6 +121,10 @@ class MusicController {
     }
     const next = this.playlist()[0] ?? null;
     this.select(next, false);
+    if (!next) {
+      this.playbackError = 'No playable tracks are available in this playlist.';
+      this.publish();
+    }
   }
 
   subscribe = (listener: () => void) => {
