@@ -130,10 +130,22 @@ class MusicController {
     if (!getPrefs().music) return;
     const el = this.audioElement();
     if (!el) return;
+    const context = this.gain?.context;
+    // iOS can leave WebAudio suspended while the media element itself reports
+    // "playing". Resume the output on this explicit user gesture instead of
+    // pausing a track that is currently inaudible.
+    if (!el.paused && context && context.state !== 'running') {
+      this.manualPause = false;
+      this.unlocked = true;
+      void context.resume().then(() => this.publish()).catch(() => this.publish());
+      this.publish();
+      return;
+    }
     if (!el.paused) { this.manualPause = true; el.pause(); }
     else {
       this.manualPause = false;
       this.unlocked = true;
+      if (context && context.state !== 'running') void context.resume().catch(() => this.publish());
       if (!this.current) this.select(this.playlist()[0] ?? null, false);
       if (this.current) void el.play().catch(() => this.publish());
     }
