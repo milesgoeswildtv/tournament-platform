@@ -1,4 +1,5 @@
-import { getPrefs } from './prefs';\nimport { music } from './music';
+import { getPrefs } from './prefs';
+import { music } from './music';
 
 /**
  * Sound, generated in the browser with WebAudio — no audio files, nothing to
@@ -13,10 +14,8 @@ const ROOTS = [55, 49, 58.27, 43.65];
 class Engine {
   private ctx: AudioContext | null = null;
   private master!: GainNode;
-  private musicBus!: GainNode;
   private sfxBus!: GainNode;
   private noise!: AudioBuffer;
-  private music: { stop: () => void } | null = null;
 
   private ensure(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -27,9 +26,6 @@ class Engine {
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.9;
       this.master.connect(this.ctx.destination);
-      this.musicBus = this.ctx.createGain();
-      this.musicBus.gain.value = 0;
-      this.musicBus.connect(this.master);
       this.sfxBus = this.ctx.createGain();
       this.sfxBus.gain.value = 0.5;
       this.sfxBus.connect(this.master);
@@ -45,7 +41,7 @@ class Engine {
   /** Call from any user gesture so later cues are allowed to play. */
   unlock() {
     this.ensure();
-    this.syncMusic();
+    music.unlock();
   }
 
   get musicPlaying() {
@@ -70,7 +66,7 @@ class Engine {
     const o = ctx.createOscillator();
     o.frequency.setValueAtTime(110, t);
     o.frequency.exponentialRampToValueAtTime(42, t + 0.18);
-    o.connect(this.env(t, vol, 0.005, 0.32, this.musicBus));
+    o.connect(this.env(t, vol, 0.005, 0.32, this.sfxBus));
     o.start(t);
     o.stop(t + 0.4);
   }
@@ -86,14 +82,6 @@ class Engine {
     s.connect(f).connect(this.env(t, vol, 0.002, decay, bus));
     s.start(t, Math.random());
     s.stop(t + decay + 0.05);
-  }
-
-  private hat(t: number, vol: number) {
-    this.noiseHit(t, vol, 'highpass', 7000, 0.05, this.musicBus);
-  }
-
-  private clank(t: number) {
-    this.noiseHit(t, 0.06, 'bandpass', 1250, 0.4, this.musicBus);
   }
 
   private tone(t: number, freq: number, vol: number, decay: number, type: OscillatorType = 'square', glideTo?: number) {
