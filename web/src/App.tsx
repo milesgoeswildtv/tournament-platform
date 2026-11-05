@@ -76,7 +76,7 @@ function Routes() {
   const unread = useUnread(!!session, path);
 
   useEffect(() => {
-    if (!/^\\/t\\/[^/]+$/.test(path)) music.setScreen('lobby');
+    if (!path.startsWith('/t/') || path.slice(3).includes('/')) music.setScreen('lobby');
   }, [path]);
 
   useEffect(() => {
