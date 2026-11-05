@@ -101,11 +101,40 @@ const attr = (page: Page, a: string) => page.locator('[data-phase]').first().get
 // ------------------------------------------------------------------ sponsor creates the tournament
 
 const A = await open('sponsor');
+await A.addInitScript(() => {
+  localStorage.setItem('tp.prefs.v1', JSON.stringify({
+    music: true,
+    musicVolume: 0.4,
+    lobbyMusicCategories: ['underground'],
+    gameplayMusicCategories: ['oddity'],
+    sfx: true,
+    haptics: true,
+    motion: 'system',
+  }));
+  (window as any).__shystMusicStarts = [];
+  const originalPlay = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function (...args: []) {
+    this.addEventListener('playing', () => {
+      (window as any).__shystMusicStarts.push({
+        src: this.currentSrc,
+        readyState: this.readyState,
+      });
+    }, { once: true });
+    return originalPlay.apply(this, args);
+  };
+});
 await A.goto(`${APP}/auth`);
 await shot(A, '01-auth');
 await signUp(A, `qa_host${sfx}`, NAMES.host);
 await A.waitForURL(`${APP}/`);
 await A.getByText('Join with a code').waitFor();
+await A.waitForFunction(() => (window as any).__shystMusicStarts?.some(
+  (item: { src: string; readyState: number }) => item.src.includes('/music/underground/') && item.readyState >= 2,
+), undefined, { timeout: 15_000 });
+const musicStarts = await A.evaluate(() => (window as any).__shystMusicStarts as { src: string; readyState: number }[]);
+assert.ok(musicStarts.some((item) => item.src.includes('/music/underground/') && item.readyState >= 2),
+  'music must load and emit a real playing event after the first user gesture');
+log('music playback started from the first user gesture:', musicStarts[0]?.src);
 await shot(A, '02-hub');
 log('sponsor signed up');
 

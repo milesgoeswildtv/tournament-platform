@@ -69,7 +69,7 @@ function HeaderMusicPlayer() {
         <section className={s.musicPopover} aria-label="Music player">
           <div className={s.musicPopoverHead}>
             <div className={s.musicPopoverTitle}>NOW PLAYING</div>
-            <span className={s.musicStatus}>{player.playing ? 'PLAYING' : prefs.music ? 'READY' : 'MUSIC OFF'}</span>
+            <span className={s.musicStatus}>{player.error ? 'AUDIO ISSUE' : player.playing ? 'PLAYING' : prefs.music ? 'READY' : 'MUSIC OFF'}</span>
           </div>
           <div className={s.musicTrack}>
             <b title={player.track?.title ?? undefined}>{player.track?.title ?? 'No track selected'}</b>
@@ -86,6 +86,7 @@ function HeaderMusicPlayer() {
             <input aria-label="Music volume" type="range" min="0" max="1" step="0.05" value={prefs.musicVolume} onChange={(event) => changeVolume(Number(event.target.value))} />
             <output>{Math.round(prefs.musicVolume * 100)}%</output>
           </label>
+          {player.error && <p className={s.musicHint} role="status">{player.error}</p>}
           {!prefs.music && <p className={s.musicHint}>Turn Music on in Settings to start playback.</p>}
         </section>
       )}

@@ -4,9 +4,13 @@ import './styles/tokens.css';
 import './styles/base.css';
 import { App } from './App';
 import { audio } from './lib/audio';
+import { music } from './lib/music';
 
-// Audio may only start after a user gesture; the first tap anywhere unlocks it.
-window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+// iOS Safari requires a user gesture. Start the music pipeline first, then unlock SFX.
+window.addEventListener('pointerdown', () => {
+  music.unlock();
+  audio.unlock();
+}, { once: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
