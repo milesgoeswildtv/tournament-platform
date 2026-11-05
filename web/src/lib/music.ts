@@ -11,8 +11,8 @@ export const MUSIC_CATEGORIES: { id: MusicCategory; label: string; description: 
 
 export interface MusicTrack { id: string; title: string; category: MusicCategory; src: string; }
 
-// Add a file under public/music/<category>/ and one entry here. No player or
-// settings changes are needed when the library grows.
+// Add a file under public/music/<category>/ and one entry here. The controller
+// owns playback, playlist selection, browser unlock and recovery in one place.
 export const MUSIC_LIBRARY: MusicTrack[] = [
   { id: 'underground-bad-signal', title: 'BAD SIGNAL', category: 'underground', src: '/music/underground/BAD%20SIGNAL%20-%20LOST%20CRASHOUT.mp3' },
   { id: 'underground-basement-anthem', title: 'BASEMENT ANTHEM', category: 'underground', src: '/music/underground/BASEMENT%20ANTHEM%20-%20LOST%20CRASHOUT.mp3' },
@@ -25,12 +25,17 @@ export const MUSIC_LIBRARY: MusicTrack[] = [
   { id: 'oddity-parasite-radio', title: 'PARASITE RADIO', category: 'oddity', src: '/music/oddity/PARASITE%20RADIO%20-%20LOST%20CRASHOUT.mp3' },
 ];
 
-type Snapshot = { track: MusicTrack | null; playing: boolean; screen: MusicScreen; available: number; shuffle: boolean };
+type Snapshot = {
+  track: MusicTrack | null;
+  playing: boolean;
+  screen: MusicScreen;
+  available: number;
+  shuffle: boolean;
+  error: string | null;
+};
 
 class MusicController {
   private element: HTMLAudioElement | null = null;
-  private gain: GainNode | null = null;
-  private source: MediaElementAudioSourceNode | null = null;
   private screen: MusicScreen = 'lobby';
   private current: MusicTrack | null = null;
   private listeners = new Set<() => void>();
@@ -38,87 +43,139 @@ class MusicController {
   private failedTracks = new Set<string>();
   private unlocked = false;
   private shuffle = false;
-  private snapshot: Snapshot = { track: null, playing: false, screen: 'lobby', available: 0, shuffle: false };
+  private playbackError: string | null = null;
+  private snapshot: Snapshot = {
+    track: null, playing: false, screen: 'lobby', available: 0, shuffle: false, error: null,
+  };
 
-  private audioElement() {
-    if (!this.element && typeof Audio !== 'undefined') {
-      this.element = new Audio();
-      this.element.preload = 'metadata';
-      this.element.addEventListener('ended', () => this.next());
-      this.element.addEventListener('play', () => this.publish());
-      this.element.addEventListener('pause', () => this.publish());
-      this.element.addEventListener('error', () => {
-        if (this.current) this.failedTracks.add(this.current.id);
-        this.element!.removeAttribute('src');
-        this.element!.load();
-        this.current = null;
-        this.next();
+  private audioElement(): HTMLAudioElement | null {
+    if (typeof Audio === 'undefined') return null;
+    if (!this.element) {
+      const el = new Audio();
+      el.preload = 'auto';
+      el.playsInline = true;
+      el.addEventListener('play', () => {
+        this.playbackError = null;
+        this.publish();
       });
+      el.addEventListener('playing', () => this.publish());
+      el.addEventListener('pause', () => this.publish());
+      el.addEventListener('ended', () => this.next());
+      el.addEventListener('error', () => this.handleTrackError());
+      this.element = el;
     }
     return this.element;
   }
 
-  private playlist() {
-    const p = getPrefs();
-    const enabled = new Set(this.screen === 'lobby' ? p.lobbyMusicCategories : p.gameplayMusicCategories);
-    return MUSIC_LIBRARY.filter((track) => enabled.has(track.category) && !this.failedTracks.has(track.id));
+  private playlist(): MusicTrack[] {
+    const prefs = getPrefs();
+    const categories = new Set(
+      this.screen === 'lobby' ? prefs.lobbyMusicCategories : prefs.gameplayMusicCategories,
+    );
+    return MUSIC_LIBRARY.filter(
+      (track) => categories.has(track.category) && !this.failedTracks.has(track.id),
+    );
   }
 
   private publish() {
     const el = this.element;
-    this.snapshot = { track: this.current, playing: !!el && !el.paused && !el.ended, screen: this.screen, available: this.playlist().length, shuffle: this.shuffle };
-    this.listeners.forEach((fn) => fn());
+    this.snapshot = {
+      track: this.current,
+      playing: !!el && !el.paused && !el.ended,
+      screen: this.screen,
+      available: this.playlist().length,
+      shuffle: this.shuffle,
+      error: this.playbackError,
+    };
+    this.listeners.forEach((listener) => listener());
   }
 
-  subscribe = (fn: () => void) => { this.listeners.add(fn); return () => this.listeners.delete(fn); };
+  private playCurrent() {
+    const el = this.audioElement();
+    if (!el || !this.current || !getPrefs().music || !this.unlocked || this.manualPause) {
+      this.publish();
+      return;
+    }
+
+    // Keep play() directly in the user-activation call path when unlocking.
+    // iOS Safari requires this gesture before it will permit audible playback.
+    void el.play().then(() => {
+      this.playbackError = null;
+      this.publish();
+    }).catch((error: unknown) => {
+      const name = error instanceof DOMException ? error.name : '';
+      this.playbackError = name === 'NotAllowedError'
+        ? 'Tap the page or Play to allow audio.'
+        : 'Playback could not start. Try Play again.';
+      this.publish();
+    });
+  }
+
+  private handleTrackError() {
+    if (this.current) this.failedTracks.add(this.current.id);
+    this.playbackError = 'This track could not be loaded. Skipping it.';
+    this.current = null;
+    const el = this.element;
+    if (el) {
+      el.pause();
+      el.removeAttribute('src');
+      el.load();
+    }
+    const next = this.playlist()[0] ?? null;
+    this.select(next, false);
+  }
+
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
   getSnapshot = () => this.snapshot;
 
-  connectAudioContext(context: AudioContext) {
-    const el = this.audioElement();
-    if (!el || this.source) return;
-    try {
-      this.source = context.createMediaElementSource(el);
-      this.gain = context.createGain();
-      this.gain.gain.value = getPrefs().musicVolume;
-      this.source.connect(this.gain).connect(context.destination);
-      el.volume = 1;
-    } catch {
-      this.source = null;
-      this.gain = null;
-    }
+  /** Called from the app's first real pointer interaction. */
+  unlock() {
+    this.unlocked = true;
+    if (!this.current) this.select(this.playlist()[0] ?? null, false);
+    else this.playCurrent();
   }
-
-  unlock() { this.unlocked = true; this.sync(); }
 
   setScreen(screen: MusicScreen) {
     if (this.screen === screen) return;
+    const wasPlaying = !!this.element && !this.element.paused;
     this.screen = screen;
     const list = this.playlist();
-    if (this.current && list.some((track) => track.id === this.current!.id)) return this.publish();
-    this.select(list[0] ?? null, true);
+    if (this.current && list.some((track) => track.id === this.current!.id)) {
+      this.publish();
+      return;
+    }
+    this.select(list[0] ?? null, wasPlaying);
   }
 
   sync() {
     const el = this.audioElement();
     if (!el) return;
-    const p = getPrefs();
-    if (this.gain) this.gain.gain.setTargetAtTime(Math.max(0, Math.min(1, p.musicVolume)), this.gain.context.currentTime, 0.04);
-    else el.volume = Math.max(0, Math.min(1, p.musicVolume));
-    if (!p.music) { el.pause(); this.publish(); return; }
-    const list = this.playlist();
-    if (this.current && list.some((track) => track.id === this.current!.id)) {
-      if (this.unlocked && !this.manualPause && el.paused) void el.play().catch(() => this.publish());
+    const prefs = getPrefs();
+    el.volume = Math.max(0, Math.min(1, prefs.musicVolume));
+
+    if (!prefs.music) {
+      el.pause();
       this.publish();
       return;
     }
-    this.select(list[0] ?? null, true);
+
+    const list = this.playlist();
+    if (this.current && list.some((track) => track.id === this.current!.id)) {
+      if (el.paused && !this.manualPause) this.playCurrent();
+      else this.publish();
+      return;
+    }
+
+    this.select(list[0] ?? null, false);
   }
 
   setVolume(value: number) {
-    const v = Math.max(0, Math.min(1, value));
     const el = this.audioElement();
-    if (this.gain) this.gain.gain.setTargetAtTime(v, this.gain.context.currentTime, 0.04);
-    else if (el) el.volume = v;
+    if (el) el.volume = Math.max(0, Math.min(1, value));
   }
 
   toggleShuffle() {
@@ -130,47 +187,73 @@ class MusicController {
     if (!getPrefs().music) return;
     const el = this.audioElement();
     if (!el) return;
-    if (!el.paused) { this.manualPause = true; el.pause(); }
-    else {
-      this.manualPause = false;
-      this.unlocked = true;
-      if (!this.current) this.select(this.playlist()[0] ?? null, false);
-      if (this.current) void el.play().catch(() => this.publish());
+
+    if (!el.paused) {
+      this.manualPause = true;
+      el.pause();
+      this.publish();
+      return;
     }
-    this.publish();
+
+    this.manualPause = false;
+    this.unlocked = true;
+    if (!this.current) this.select(this.playlist()[0] ?? null, false);
+    else this.playCurrent();
   }
 
   next() {
     const list = this.playlist();
-    if (!list.length) return this.select(null, false);
+    if (!list.length) {
+      this.select(null, false);
+      return;
+    }
     const index = this.current ? list.findIndex((track) => track.id === this.current!.id) : -1;
-    const nextIndex = list.length > 1 ? (this.shuffle ? (index + 1 + Math.floor(Math.random() * (list.length - 1))) % list.length : (index + 1) % list.length) : 0;
+    const nextIndex = list.length > 1 && this.shuffle
+      ? (index + 1 + Math.floor(Math.random() * (list.length - 1))) % list.length
+      : (index + 1) % list.length;
     this.manualPause = false;
     this.select(list[nextIndex], false);
   }
 
   previous() {
     const list = this.playlist();
-    if (!list.length) return this.select(null, false);
+    if (!list.length) {
+      this.select(null, false);
+      return;
+    }
     const index = this.current ? list.findIndex((track) => track.id === this.current!.id) : 0;
     this.manualPause = false;
     this.select(list[(index - 1 + list.length) % list.length], false);
   }
 
-  private select(track: MusicTrack | null, preservePause: boolean) {
+  private select(track: MusicTrack | null, preservePlayback: boolean) {
     const el = this.audioElement();
     if (!el) return;
     const wasPlaying = !el.paused;
+    const hadTrack = !!this.current;
+
     el.pause();
     this.current = track;
-    if (!track) { el.removeAttribute('src'); el.load(); this.publish(); return; }
+    this.playbackError = null;
+
+    if (!track) {
+      el.removeAttribute('src');
+      el.load();
+      this.publish();
+      return;
+    }
+
     el.src = track.src;
     el.load();
-    if (this.gain) this.gain.gain.setTargetAtTime(getPrefs().musicVolume, this.gain.context.currentTime, 0.04);
-    else el.volume = getPrefs().musicVolume;
-    const shouldPlay = getPrefs().music && this.unlocked && !this.manualPause && (!preservePause || wasPlaying || !this.snapshot.track);
-    if (shouldPlay) void el.play().catch(() => this.publish());
-    this.publish();
+    el.volume = Math.max(0, Math.min(1, getPrefs().musicVolume));
+
+    const shouldPlay = getPrefs().music
+      && this.unlocked
+      && !this.manualPause
+      && (!preservePlayback || wasPlaying || !hadTrack);
+
+    if (shouldPlay) this.playCurrent();
+    else this.publish();
   }
 }
 
