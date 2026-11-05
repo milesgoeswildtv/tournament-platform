@@ -139,7 +139,7 @@ export function SettingsScreen() {
             audio.syncMusic();
           }}
           label="Music"
-          hint="A low loop generated on your device. Off by default."
+          hint="Pre-game and gameplay tracks from your music library. Off by default."
         />
         <Field label={`Music volume ${Math.round(prefs.musicVolume * 100)}%`}>
           <input
