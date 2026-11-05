@@ -19,6 +19,10 @@ export const MUSIC_LIBRARY: MusicTrack[] = [
   { id: 'underground-blackout', title: 'BLACKOUT', category: 'underground', src: '/music/underground/BLACKOUT%20-%20LOST%20CRASHOUT.mp3' },
   { id: 'underground-crooked-underground', title: 'CROOKED UNDERGROUND', category: 'underground', src: '/music/underground/CROOKED%20UNDERGROUND%20-%20LOST%20CRASHOUT.mp3' },
   { id: 'underground-no-mercy', title: 'NO MERCY', category: 'underground', src: '/music/underground/NO%20MERCY%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'drift-low-profile', title: 'LOW PROFILE', category: 'drift', src: '/music/drift/LOW%20PROFILE%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'drift-nightshift', title: 'NIGHTSHIFT', category: 'drift', src: '/music/drift/NIGHTSHIFT%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'oddity-cracked-frequency', title: 'CRACKED FREQUENCY', category: 'oddity', src: '/music/oddity/CRACKED%20FREQUENCY%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'oddity-parasite-radio', title: 'PARASITE RADIO', category: 'oddity', src: '/music/oddity/PARASITE%20RADIO%20-%20LOST%20CRASHOUT.mp3' },
 ];
 
 type Snapshot = { track: MusicTrack | null; playing: boolean; screen: MusicScreen; available: number };
