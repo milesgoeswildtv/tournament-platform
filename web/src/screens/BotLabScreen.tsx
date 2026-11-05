@@ -96,7 +96,7 @@ function connectBot(index: number, token: string, tid: string, gameStyle: BotSty
         }
         const action = kind === 'reroll' ? { type: 'reroll' } : actionFor(latest.stage.gameId, latest, gameStyle);
         if (ws.readyState !== WebSocket.OPEN) { bot.pending = undefined; onLog(`${handle}: socket closed before action send`); return; }
-        try { ws.send(JSON.stringify({ t: 'act', stage: stage.index, round: stage.round, action })); bot.pending.sentAt = Date.now(); bot.attempts.set(key, (bot.attempts.get(key) ?? 0) + 1); armAckRecovery(key); onLog(`${handle}: sent ${JSON.stringify(action)}; awaiting server confirmation`); }
+        try { ws.send(JSON.stringify({ t: 'act', stage: stage.index, round: stage.round, action })); if (bot.pending?.key === key) { bot.pending.sentAt = Date.now(); bot.attempts.set(key, (bot.attempts.get(key) ?? 0) + 1); armAckRecovery(key); } onLog(`${handle}: sent ${JSON.stringify(action)}; awaiting server confirmation`); }
         catch { bot.pending = undefined; onLog(`${handle}: action send failed`); }
       }, delay);
     };
