@@ -13,7 +13,13 @@ export interface MusicTrack { id: string; title: string; category: MusicCategory
 
 // Add a file under public/music/<category>/ and one entry here. No player or
 // settings changes are needed when the library grows.
-export const MUSIC_LIBRARY: MusicTrack[] = [];
+export const MUSIC_LIBRARY: MusicTrack[] = [
+  { id: 'underground-bad-signal', title: 'BAD SIGNAL', category: 'underground', src: '/music/underground/BAD%20SIGNAL%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'underground-basement-anthem', title: 'BASEMENT ANTHEM', category: 'underground', src: '/music/underground/BASEMENT%20ANTHEM%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'underground-blackout', title: 'BLACKOUT', category: 'underground', src: '/music/underground/BLACKOUT%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'underground-crooked-underground', title: 'CROOKED UNDERGROUND', category: 'underground', src: '/music/underground/CROOKED%20UNDERGROUND%20-%20LOST%20CRASHOUT.mp3' },
+  { id: 'underground-no-mercy', title: 'NO MERCY', category: 'underground', src: '/music/underground/NO%20MERCY%20-%20LOST%20CRASHOUT.mp3' },
+];
 
 type Snapshot = { track: MusicTrack | null; playing: boolean; screen: MusicScreen; available: number };
 
