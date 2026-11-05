@@ -2,7 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ApiError, get, patch, post, setSession, updateUser, useSession, type User } from '../lib/api';
 import { useLoad } from '../lib/useLoad';
 import { setPrefs, usePrefs } from '../lib/prefs';
-import { audio } from '../lib/audio';\nimport { MUSIC_CATEGORIES, music, type MusicCategory } from '../lib/music';\nimport { useSyncExternalStore } from 'react';
+import { audio } from '../lib/audio';
+import { MUSIC_CATEGORIES, music, type MusicCategory } from '../lib/music';
+import { useSyncExternalStore } from 'react';
 import { navigate, useLocation } from '../lib/router';
 import { DISCORD_RESULT, startDiscord } from '../lib/discord';
 import { toast } from '../lib/toast';
@@ -13,7 +15,8 @@ import sc from './screens.module.css';
 
 export function SettingsScreen() {
   const session = useSession();
-  const prefs = usePrefs();\n  const player = useSyncExternalStore(music.subscribe, music.getSnapshot, music.getSnapshot);
+  const prefs = usePrefs();
+  const player = useSyncExternalStore(music.subscribe, music.getSnapshot, music.getSnapshot);
   const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null }; password: { configured: boolean; handle: string | null } }>('/api/me'));
   const { search } = useLocation();
   const discordNote = DISCORD_RESULT[search.get('discord') ?? ''];
