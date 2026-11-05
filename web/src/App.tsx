@@ -3,7 +3,7 @@ import { RouterProvider, match, navigate, useLocation } from './lib/router';
 import { get, useSession, updateUser } from './lib/api';
 import { bootTelegram, inTelegram } from './lib/telegram';
 import { AppShell, OfflineBanner, Toasts } from './ui/shell';
-import { Loading } from './ui/layout';
+import { Loading } from './ui/layout';\nimport { music } from './lib/music';
 import { AuthScreen } from './screens/AuthScreen';
 import { DiscordScreen } from './screens/DiscordScreen';
 import { HubScreen } from './screens/HubScreen';
@@ -72,7 +72,7 @@ function Routes() {
   const session = useSession();
   const { path } = useLocation();
   const [booting, setBooting] = useState(inTelegram());
-  const unread = useUnread(!!session, path);
+  const unread = useUnread(!!session, path);\n\n  useEffect(() => {\n    if (!/^\\/t\\/[^/]+$/.test(path)) music.setScreen('lobby');\n  }, [path]);
 
   useEffect(() => {
     if (!booting) return;
