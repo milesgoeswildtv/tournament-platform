@@ -23,6 +23,7 @@ class MusicController {
   private current: MusicTrack | null = null;
   private listeners = new Set<() => void>();
   private manualPause = false;
+  private failedTracks = new Set<string>();
   private unlocked = false;
   private snapshot: Snapshot = { track: null, playing: false, screen: 'lobby', available: 0 };
 
@@ -34,10 +35,11 @@ class MusicController {
       this.element.addEventListener('play', () => this.publish());
       this.element.addEventListener('pause', () => this.publish());
       this.element.addEventListener('error', () => {
+        if (this.current) this.failedTracks.add(this.current.id);
         this.element!.removeAttribute('src');
         this.element!.load();
         this.current = null;
-        this.publish();
+        this.next();
       });
     }
     return this.element;
@@ -46,7 +48,7 @@ class MusicController {
   private playlist() {
     const p = getPrefs();
     const enabled = new Set(this.screen === 'lobby' ? p.lobbyMusicCategories : p.gameplayMusicCategories);
-    return MUSIC_LIBRARY.filter((track) => enabled.has(track.category));
+    return MUSIC_LIBRARY.filter((track) => enabled.has(track.category) && !this.failedTracks.has(track.id));
   }
 
   private publish() {
