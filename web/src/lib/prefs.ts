@@ -5,7 +5,7 @@ export interface Prefs {
   music: boolean;
   musicVolume: number; // 0..1
   lobbyMusicCategories: ('underground' | 'drift' | 'oddity')[];
-  gameplayMusicCategories: ('underground' | 'drift' | 'oddity')[]
+  gameplayMusicCategories: ('underground' | 'drift' | 'oddity')[];
   sfx: boolean;
   haptics: boolean;
   motion: 'system' | 'reduced';
