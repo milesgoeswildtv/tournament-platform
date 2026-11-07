@@ -21,12 +21,13 @@
     "test:integration": "node --experimental-sqlite --no-warnings --import tsx --test --test-concurrency=1 tests/integration.test.ts tests/identity.test.ts tests/discord.test.ts tests/crashout-link.test.ts",
     "build:web:vite": "vite build --config web/vite.config.ts",
     "typecheck:offline": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.local.json --noEmit",
-    "test:all": "npm run test:unit && npm run test:integration && npm run build:web && npm run test:ui && npm run test:telegram-ui && npm run test:discord-ui",
+    "test:all": "npm run test:unit && npm run test:integration && npm run build:web && npm run test:ui && npm run test:telegram-ui && npm run test:discord-ui && npm run test:crashout-ui",
     "shots": "node --experimental-sqlite --no-warnings --import tsx scripts/shots.ts",
     "test:telegram-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-telegram.ts",
     "check:design": "node scripts/check-css.mjs",
     "icons": "node --import tsx scripts/icons.ts",
-    "test:discord-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-discord.ts"
+    "test:discord-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-discord.ts",
+    "test:crashout-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-crashout-link.ts"
   },
   "dependencies": {
     "react": "^19.2.0",
