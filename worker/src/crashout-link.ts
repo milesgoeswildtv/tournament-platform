@@ -18,6 +18,7 @@ const TOKEN_RE = /^[a-f0-9]{64}$/;
 export async function completeCrashoutLink(c: RouteCtx): Promise<Response> {
   const user = await requireUser(c);
   const adapterEnv = c.env as typeof c.env & CrashoutEnv;
+  const adapterKey = adapterEnv.CRASHOUT_SHYST_ADAPTER_KEY;
   await rateLimit(c.env, `crashout-link-user:${user.id}`, 6, 600);
   await rateLimit(c.env, 'crashout-link-ip:' + (c.req.headers.get('cf-connecting-ip') ?? 'unknown'), 30, 600);
 
