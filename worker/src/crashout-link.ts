@@ -22,7 +22,7 @@ export async function completeCrashoutLink(c: RouteCtx): Promise<Response> {
   await rateLimit(c.env, `crashout-link-user:${user.id}`, 6, 600);
   await rateLimit(c.env, 'crashout-link-ip:' + (c.req.headers.get('cf-connecting-ip') ?? 'unknown'), 30, 600);
 
-  if (!adapterEnv.CRASHOUT_SHYST_ADAPTER_KEY || c.env.CRASHOUT_SHYST_ADAPTER_KEY.length < 32) {
+  if (!adapterKey || adapterKey.length < 32) {
     throw new HttpError(503, 'crashout_link_unavailable', 'Crashout account linking is not configured on this server.');
   }
 
@@ -38,7 +38,7 @@ export async function completeCrashoutLink(c: RouteCtx): Promise<Response> {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-crashout-adapter-key': c.env.CRASHOUT_SHYST_ADAPTER_KEY,
+        'x-crashout-adapter-key': adapterKey,
       },
       body: JSON.stringify({
         game_key: 'shyst',
