@@ -160,6 +160,7 @@ function Routes() {
     if (!session) return;
     let token = '';
     try { token = sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return; }
+    if (!token) return;
     let flow = 'existing';
     let authConfirmed = false;
     try {
@@ -170,7 +171,7 @@ function Routes() {
       navigate('/connect/crashout', { replace: true });
       return;
     }
-    if (!token || linkInFlight.current === token) return;
+    if (linkInFlight.current === token) return;
     linkInFlight.current = token;
     post<{ ok: boolean; linked: boolean }>('/api/me/crashout/link', { token })
       .then(() => toast('Your SHYST account is now connected to Crashout.', 'good'))
