@@ -16,6 +16,7 @@ mkdirSync(OUT, { recursive: true });
 const ADAPTER_KEY = 'e2e-only-shyst-adapter-key-not-production';
 const TOKEN_EXISTING = 'a'.repeat(64);
 const TOKEN_CREATE = 'b'.repeat(64);
+const TOKEN_ACTIVE_EXISTING = 'c'.repeat(64);
 const calls: { key: string | string[] | undefined; body: any }[] = [];
 
 const gateway = createServer(async (req, res) => {
@@ -78,6 +79,13 @@ try {
   check(!page.url().includes(TOKEN_EXISTING), 'one-time token is removed from the address bar after handoff');
   await page.screenshot({ path: `${OUT}crashout-link-existing.png`, fullPage: true });
 
+  // If the browser already has a SHYST session, require an explicit choice.
+  await page.goto(`${server.url}/#crashout_link=${TOKEN_ACTIVE_EXISTING}&crashout_flow=existing`);
+  await page.getByText('ALREADY SIGNED IN.').waitFor();
+  await page.getByRole('button', { name: 'USE THIS SHYST ACCOUNT' }).click();
+  await page.getByText('Your current SHYST account is now connected to Crashout.').waitFor();
+  check(calls.length === 2 && calls[1].body.external_player_id === existingId, 'active existing SHYST session is linked only after explicit confirmation');
+
   // New-account path: signup mode is selected and the newly created player is linked.
   await page.goto(`${server.url}/#crashout_link=${TOKEN_CREATE}&crashout_flow=create`);
   await page.getByText('ALREADY SIGNED IN.').waitFor();
@@ -90,8 +98,8 @@ try {
   await page.getByRole('button', { name: 'Create account' }).last().click();
   await page.getByText('Your SHYST account is now connected to Crashout.').waitFor();
   const createdId = await userId('crashout_created');
-  check(calls.length === 2 && calls[1].body.external_player_id === createdId, 'newly created SHYST account is linked automatically');
-  check(calls[1].body.token === TOKEN_CREATE && calls[1].key === ADAPTER_KEY, 'new-account flow uses the same scoped server-side gateway');
+  check(calls.length === 3 && calls[2].body.external_player_id === createdId, 'newly created SHYST account is linked automatically');
+  check(calls[2].body.token === TOKEN_CREATE && calls[2].key === ADAPTER_KEY, 'new-account flow uses the same scoped server-side gateway');
   check(!page.url().includes(TOKEN_CREATE), 'new-account one-time token is removed from the address bar');
   const browserStorage = await page.evaluate(() => JSON.stringify({ local: localStorage, session: sessionStorage }));
   check(!browserStorage.includes(ADAPTER_KEY), 'adapter credential never enters browser storage');
