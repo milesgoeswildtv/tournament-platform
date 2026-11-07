@@ -108,6 +108,7 @@ function CrashoutLinkChoice() {
   }
 
   if (!session) {
+    try { sessionStorage.setItem('crashout.link.authConfirmed', '1'); } catch { /* ignore */ }
     queueMicrotask(() => navigate(flow === 'create' ? '/auth?mode=signup&next=%2F' : '/auth?next=%2F', { replace: true }));
     return <Loading />;
   }
