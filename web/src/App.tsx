@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { RouterProvider, match, navigate, useLocation } from './lib/router';
-import { get, post, useSession, updateUser, type ApiError } from './lib/api';
+import { get, post, setSession, useSession, updateUser, type ApiError } from './lib/api';
 import { bootTelegram, inTelegram } from './lib/telegram';
 import { AppShell, OfflineBanner, Toasts } from './ui/shell';
 import { Loading } from './ui/layout';
@@ -29,6 +29,7 @@ const ROUTES: R[] = [
   { pattern: '/', render: () => <HubScreen />, shell: true },
   { pattern: '/auth', render: () => <AuthScreen />, public: true },
   { pattern: '/auth/discord', render: () => <DiscordScreen />, public: true },
+  { pattern: '/connect/crashout', render: () => <CrashoutCreateChoice />, public: true },
   { pattern: '/join', render: () => <JoinScreen />, shell: true },
   { pattern: '/j/:code', render: (p) => <InviteScreen code={p.code} />, shell: true, public: true },
   { pattern: '/sponsor', render: () => <SponsorScreen />, shell: true },
@@ -70,6 +71,68 @@ function useUnread(signedIn: boolean, path: string) {
   return unread;
 }
 
+function CrashoutCreateChoice() {
+  const session = useSession();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const token = (() => { try { return sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return ''; } })();
+
+  async function useCurrentAccount() {
+    if (!token) { setError('The Crashout link has expired. Start again from the Crashout hub.'); return; }
+    setBusy(true); setError('');
+    try {
+      await post('/api/me/crashout/link', { token });
+      try {
+        sessionStorage.removeItem('crashout.link.token');
+        sessionStorage.removeItem('crashout.link.flow');
+        sessionStorage.removeItem('crashout.link.createConfirmed');
+      } catch { /* ignore */ }
+      toast('Your current SHYST account is now connected to Crashout.', 'good');
+      navigate('/', { replace: true });
+    } catch (e) {
+      setError((e as ApiError).message || 'Could not connect this SHYST account.');
+    } finally { setBusy(false); }
+  }
+
+  async function createAnotherAccount() {
+    setBusy(true); setError('');
+    try {
+      await post('/api/auth/logout');
+      try { sessionStorage.setItem('crashout.link.createConfirmed', '1'); } catch { /* ignore */ }
+      setSession(null);
+      navigate('/auth?mode=signup&next=%2F', { replace: true });
+    } catch (e) {
+      setError((e as ApiError).message || 'Could not safely sign out. Try again.');
+    } finally { setBusy(false); }
+  }
+
+  if (!session) {
+    queueMicrotask(() => navigate('/auth?mode=signup&next=%2F', { replace: true }));
+    return <Loading />;
+  }
+
+  return (
+    <main className="social-page">
+      <div className="eyebrow">CRASHOUT CONNECTION / NEW ACCOUNT</div>
+      <h1>ALREADY <em>SIGNED IN.</em></h1>
+      <p className="social-lead">
+        SHYST is currently signed in as <b>{session.user.name}</b> (Player #{session.user.tag}).
+        You chose to create a new SHYST account from Crashout. Choose whether to connect this
+        current player or sign out and create a separate SHYST player. Nothing is merged.
+      </p>
+      {error && <div className="auth-error" role="alert">{error}</div>}
+      <div className="settings-card">
+        <button className="primary" disabled={busy || !token} onClick={() => void useCurrentAccount()}>
+          {busy ? 'WORKING...' : 'USE THIS SHYST ACCOUNT'}
+        </button>
+        <button className="social-action" disabled={busy} onClick={() => void createAnotherAccount()}>
+          SIGN OUT & CREATE A NEW ACCOUNT
+        </button>
+      </div>
+    </main>
+  );
+}
+
 function Routes() {
   const session = useSession();
   const { path } = useLocation();
@@ -96,6 +159,16 @@ function Routes() {
     if (!session) return;
     let token = '';
     try { token = sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return; }
+    let flow = 'existing';
+    let createConfirmed = false;
+    try {
+      flow = sessionStorage.getItem('crashout.link.flow') ?? 'existing';
+      createConfirmed = sessionStorage.getItem('crashout.link.createConfirmed') === '1';
+    } catch { /* ignore */ }
+    if (flow === 'create' && !createConfirmed) {
+      navigate('/connect/crashout', { replace: true });
+      return;
+    }
     if (!token || linkInFlight.current === token) return;
     linkInFlight.current = token;
     post<{ ok: boolean; linked: boolean }>('/api/me/crashout/link', { token })
@@ -105,6 +178,7 @@ function Routes() {
         try {
           sessionStorage.removeItem('crashout.link.token');
           sessionStorage.removeItem('crashout.link.flow');
+          sessionStorage.removeItem('crashout.link.createConfirmed');
         } catch { /* tab storage may be unavailable */ }
         linkInFlight.current = null;
       });
@@ -133,6 +207,9 @@ function Routes() {
       let createFlow = false;
       try { createFlow = sessionStorage.getItem('crashout.link.flow') === 'create'; } catch { /* ignore */ }
       const mode = createFlow ? 'mode=signup&' : '';
+      if (createFlow) {
+        try { sessionStorage.setItem('crashout.link.createConfirmed', '1'); } catch { /* ignore */ }
+      }
       queueMicrotask(() => navigate(`/auth?${mode}next=${next}`, { replace: true }));
       return <Loading />;
     }
