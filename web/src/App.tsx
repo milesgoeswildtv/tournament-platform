@@ -184,7 +184,7 @@ function Routes() {
         } catch { /* tab storage may be unavailable */ }
         linkInFlight.current = null;
       });
-  }, [session?.user.id]);
+  }, [session?.user.id, incomingLinkToken]);
 
   useEffect(() => {
     if (!path.startsWith('/t/') || path.slice(3).includes('/')) music.setScreen('lobby');
