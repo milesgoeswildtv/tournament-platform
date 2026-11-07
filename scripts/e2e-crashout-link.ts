@@ -67,9 +67,44 @@ try {
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.waitForURL(/\/auth/);
   await page.goto(`${server.url}/#crashout_link=${TOKEN_EXISTING}&crashout_flow=existing`);
-  await page.waitForURL(/\/auth\?/);
-  await page.getByRole('radio', { name: 'Sign in' }).waitFor();
-  check(await page.getByRole('radio', { name: 'Sign in' }).isChecked(), 'existing-account handoff opens sign-in mode');
+  // Session restoration can race the preceding logout/navigation on a real
+  // browser. If SHYST still has an active session, require the explicit
+  // account-switch action instead of assuming the sign-out already settled.
+  const signInMode = page.getByRole('radio', { name: 'Sign in' });
+  const activeSessionChoice = page.getByText('ALREADY SIGNED IN.');
+  await Promise.race([signInMode.waitFor({ timeout: 10_000 }), activeSessionChoice.waitFor({ timeout: 10_000 })]).catch(async (error) => {
+    const diagnostic = await page.evaluate(() => ({
+      url: window.location.href,
+      title: document.title,
+      bodyText: document.body.innerText.slice(0, 5000),
+      localStorageKeys: Object.keys(localStorage),
+      sessionStorageKeys: Object.keys(sessionStorage),
+      tokenPresent: !!sessionStorage.getItem('crashout.link.token'),
+      authConfirmed: sessionStorage.getItem('crashout.link.authConfirmed'),
+    }));
+    console.error('Crashout link initial-state diagnostic:', JSON.stringify({ diagnostic, pageErrors: errors }, null, 2));
+    await page.screenshot({ path: `${OUT}crashout-link-initial-state-failure.png`, fullPage: true }).catch(() => {});
+    throw error;
+  });
+  if (await activeSessionChoice.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'SIGN OUT & CHOOSE ANOTHER ACCOUNT' }).click();
+    await page.waitForURL(/\/auth\?/);
+  }
+  await signInMode.waitFor().catch(async (error) => {
+    const diagnostic = await page.evaluate(() => ({
+      url: window.location.href,
+      title: document.title,
+      bodyText: document.body.innerText.slice(0, 5000),
+      sessionPresent: !!localStorage.getItem('tp.session.v1'),
+      linkFlow: sessionStorage.getItem('crashout.link.flow'),
+      authConfirmed: sessionStorage.getItem('crashout.link.authConfirmed'),
+      linkTokenPresent: !!sessionStorage.getItem('crashout.link.token'),
+    }));
+    console.error('Crashout account-switch diagnostic:', JSON.stringify({ diagnostic, pageErrors: errors }, null, 2));
+    await page.screenshot({ path: `${OUT}crashout-link-account-switch-failure.png`, fullPage: true }).catch(() => {});
+    throw error;
+  });
+  check(await signInMode.isChecked(), 'existing-account handoff opens sign-in mode after explicit session selection');
   await page.getByLabel('Username').fill('crashout_existing');
   await page.getByLabel('Password').fill('existing-player-1');
   await page.getByRole('button', { name: 'Sign in' }).last().click();

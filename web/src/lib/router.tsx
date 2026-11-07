@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useState, type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
 
 /** A small history-API router: the app has a flat set of routes and needs nothing more. */
 
@@ -27,7 +27,10 @@ export function back(fallback = '/') {
 
 export function RouterProvider({ children }: { children: ReactNode }) {
   const [loc, setLoc] = useState(read);
-  useEffect(() => {
+  // Subscribe during commit, before child-queued navigation microtasks run.
+  // useEffect is too late: an unauthenticated first render can redirect before
+  // the listener exists, leaving the URL at /auth while the app stays Loading.
+  useLayoutEffect(() => {
     const on = () => setLoc(read());
     window.addEventListener('popstate', on);
     window.addEventListener(EVENT, on);
