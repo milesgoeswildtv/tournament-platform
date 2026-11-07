@@ -80,8 +80,10 @@ try {
 
   // New-account path: signup mode is selected and the newly created player is linked.
   await page.goto(`${server.url}/#crashout_link=${TOKEN_CREATE}&crashout_flow=create`);
+  await page.getByText('ALREADY SIGNED IN.').waitFor();
+  await page.getByRole('button', { name: 'SIGN OUT & CREATE A NEW ACCOUNT' }).click();
   await page.waitForURL(/\/auth\?/);
-  check(await page.getByRole('radio', { name: 'Create account' }).isChecked(), 'create-account handoff opens signup mode');
+  check(await page.getByRole('radio', { name: 'Create account' }).isChecked(), 'create-account handoff offers explicit sign-out then opens signup mode');
   await page.getByLabel('Username').fill('crashout_created');
   await page.getByLabel('Display name').fill('New Player');
   await page.getByLabel('Password').fill('new-player-password-1');
