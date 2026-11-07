@@ -3,7 +3,7 @@ import type { RouteCtx } from './http';
 import { HttpError, json, readJson } from './http';
 import { rateLimit } from './security';
 
-type CrashoutEnv = typeof import('./env') extends never ? never : { CRASHOUT_SHYST_ADAPTER_KEY?: string; CRASHOUT_LINK_GATEWAY_URL?: string };
+type CrashoutEnv = { CRASHOUT_SHYST_ADAPTER_KEY?: string; CRASHOUT_LINK_GATEWAY_URL?: string };
 
 const DEFAULT_GATEWAY_URL = 'https://qcmfnkuyinhfdxnuvneb.supabase.co/functions/v1/complete-destination-link';
 const TOKEN_RE = /^[a-f0-9]{64}$/;
