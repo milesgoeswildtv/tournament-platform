@@ -131,6 +131,15 @@ try {
   await page.getByLabel('Display name').fill('New Player');
   await page.getByLabel('Password').fill('new-player-password-1');
   await page.getByRole('button', { name: 'Create account' }).last().click();
+  // A previous successful-link toast can still be mounted briefly. Do not
+  // mistake that stale notification for completion of this signup. Wait for
+  // the newly authenticated account itself before checking the link result.
+  await page.waitForFunction(() => {
+    try {
+      const session = JSON.parse(localStorage.getItem('tp.session.v1') ?? 'null');
+      return session?.user?.handle === 'crashout_created' && typeof session.user.id === 'string';
+    } catch { return false; }
+  }, { timeout: 15_000 });
   await page.getByText('Your SHYST account is now connected to Crashout.').waitFor();
   const createdId = await userId('crashout_created');
   check(calls.length === 3 && calls[2].body.external_player_id === createdId, 'newly created SHYST account is linked automatically');
