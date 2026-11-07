@@ -77,7 +77,20 @@ try {
     await page.getByRole('button', { name: 'SIGN OUT & CHOOSE ANOTHER ACCOUNT' }).click();
     await page.waitForURL(/\/auth\?/);
   }
-  await signInMode.waitFor();
+  await signInMode.waitFor().catch(async (error) => {
+    const diagnostic = await page.evaluate(() => ({
+      url: window.location.href,
+      title: document.title,
+      bodyText: document.body.innerText.slice(0, 5000),
+      sessionPresent: !!localStorage.getItem('tp.session.v1'),
+      linkFlow: sessionStorage.getItem('crashout.link.flow'),
+      authConfirmed: sessionStorage.getItem('crashout.link.authConfirmed'),
+      linkTokenPresent: !!sessionStorage.getItem('crashout.link.token'),
+    }));
+    console.error('Crashout account-switch diagnostic:', JSON.stringify({ diagnostic, pageErrors: errors }, null, 2));
+    await page.screenshot({ path: `${OUT}crashout-link-account-switch-failure.png`, fullPage: true }).catch(() => {});
+    throw error;
+  });
   check(await signInMode.isChecked(), 'existing-account handoff opens sign-in mode after explicit session selection');
   await page.getByLabel('Username').fill('crashout_existing');
   await page.getByLabel('Password').fill('existing-player-1');
