@@ -7,7 +7,7 @@ interface Loc {
   search: URLSearchParams;
 }
 
-const read = (): Loc => ({ path: window.location.pathname.replace(/\\/+$/, '') || '/', search: new URLSearchParams(window.location.search) });
+const read = (): Loc => ({ path: window.location.pathname.replace(/\/+$/, '') || '/', search: new URLSearchParams(window.location.search) });
 
 const Ctx = createContext<Loc>(read());
 const EVENT = 'app:navigate';
