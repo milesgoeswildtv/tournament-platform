@@ -161,10 +161,8 @@ function Routes() {
     let token = '';
     try { token = sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return; }
     if (!token) return;
-    let flow = 'existing';
     let authConfirmed = false;
     try {
-      flow = sessionStorage.getItem('crashout.link.flow') ?? 'existing';
       authConfirmed = sessionStorage.getItem('crashout.link.authConfirmed') === '1';
     } catch { /* ignore */ }
     if (!authConfirmed) {
