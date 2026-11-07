@@ -3,6 +3,8 @@ import type { RouteCtx } from './http';
 import { HttpError, json, readJson } from './http';
 import { rateLimit } from './security';
 
+type CrashoutEnv = typeof import('./env') extends never ? never : { CRASHOUT_SHYST_ADAPTER_KEY?: string; CRASHOUT_LINK_GATEWAY_URL?: string };
+
 const DEFAULT_GATEWAY_URL = 'https://qcmfnkuyinhfdxnuvneb.supabase.co/functions/v1/complete-destination-link';
 const TOKEN_RE = /^[a-f0-9]{64}$/;
 
@@ -15,10 +17,11 @@ const TOKEN_RE = /^[a-f0-9]{64}$/;
  */
 export async function completeCrashoutLink(c: RouteCtx): Promise<Response> {
   const user = await requireUser(c);
+  const adapterEnv = c.env as typeof c.env & CrashoutEnv;
   await rateLimit(c.env, `crashout-link-user:${user.id}`, 6, 600);
   await rateLimit(c.env, 'crashout-link-ip:' + (c.req.headers.get('cf-connecting-ip') ?? 'unknown'), 30, 600);
 
-  if (!c.env.CRASHOUT_SHYST_ADAPTER_KEY || c.env.CRASHOUT_SHYST_ADAPTER_KEY.length < 32) {
+  if (!adapterEnv.CRASHOUT_SHYST_ADAPTER_KEY || c.env.CRASHOUT_SHYST_ADAPTER_KEY.length < 32) {
     throw new HttpError(503, 'crashout_link_unavailable', 'Crashout account linking is not configured on this server.');
   }
 
@@ -27,7 +30,7 @@ export async function completeCrashoutLink(c: RouteCtx): Promise<Response> {
     throw new HttpError(400, 'invalid_link_token', 'The Crashout link token is invalid.');
   }
 
-  const gatewayUrl = c.env.CRASHOUT_LINK_GATEWAY_URL || DEFAULT_GATEWAY_URL;
+  const gatewayUrl = adapterEnv.CRASHOUT_LINK_GATEWAY_URL || DEFAULT_GATEWAY_URL;
   let response: Response;
   try {
     response = await fetch(gatewayUrl, {
