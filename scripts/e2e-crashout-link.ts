@@ -67,9 +67,18 @@ try {
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.waitForURL(/\/auth/);
   await page.goto(`${server.url}/#crashout_link=${TOKEN_EXISTING}&crashout_flow=existing`);
-  await page.waitForURL(/\/auth\?/);
-  await page.getByRole('radio', { name: 'Sign in' }).waitFor();
-  check(await page.getByRole('radio', { name: 'Sign in' }).isChecked(), 'existing-account handoff opens sign-in mode');
+  // Session restoration can race the preceding logout/navigation on a real
+  // browser. If SHYST still has an active session, require the explicit
+  // account-switch action instead of assuming the sign-out already settled.
+  const signInMode = page.getByRole('radio', { name: 'Sign in' });
+  const activeSessionChoice = page.getByText('ALREADY SIGNED IN.');
+  await Promise.race([signInMode.waitFor({ timeout: 10_000 }), activeSessionChoice.waitFor({ timeout: 10_000 })]);
+  if (await activeSessionChoice.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'SIGN OUT & CHOOSE ANOTHER ACCOUNT' }).click();
+    await page.waitForURL(/\/auth\?/);
+  }
+  await signInMode.waitFor();
+  check(await signInMode.isChecked(), 'existing-account handoff opens sign-in mode after explicit session selection');
   await page.getByLabel('Username').fill('crashout_existing');
   await page.getByLabel('Password').fill('existing-player-1');
   await page.getByRole('button', { name: 'Sign in' }).last().click();
