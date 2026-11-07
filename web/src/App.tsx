@@ -29,7 +29,7 @@ const ROUTES: R[] = [
   { pattern: '/', render: () => <HubScreen />, shell: true },
   { pattern: '/auth', render: () => <AuthScreen />, public: true },
   { pattern: '/auth/discord', render: () => <DiscordScreen />, public: true },
-  { pattern: '/connect/crashout', render: () => <CrashoutCreateChoice />, public: true },
+  { pattern: '/connect/crashout', render: () => <CrashoutLinkChoice />, public: true },
   { pattern: '/join', render: () => <JoinScreen />, shell: true },
   { pattern: '/j/:code', render: (p) => <InviteScreen code={p.code} />, shell: true, public: true },
   { pattern: '/sponsor', render: () => <SponsorScreen />, shell: true },
@@ -71,11 +71,12 @@ function useUnread(signedIn: boolean, path: string) {
   return unread;
 }
 
-function CrashoutCreateChoice() {
+function CrashoutLinkChoice() {
   const session = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const token = (() => { try { return sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return ''; } })();
+  const flow = (() => { try { return sessionStorage.getItem('crashout.link.flow') ?? 'existing'; } catch { return 'existing'; } })();
 
   async function useCurrentAccount() {
     if (!token) { setError('The Crashout link has expired. Start again from the Crashout hub.'); return; }
@@ -85,7 +86,7 @@ function CrashoutCreateChoice() {
       try {
         sessionStorage.removeItem('crashout.link.token');
         sessionStorage.removeItem('crashout.link.flow');
-        sessionStorage.removeItem('crashout.link.createConfirmed');
+        sessionStorage.removeItem('crashout.link.authConfirmed');
       } catch { /* ignore */ }
       toast('Your current SHYST account is now connected to Crashout.', 'good');
       navigate('/', { replace: true });
@@ -94,39 +95,39 @@ function CrashoutCreateChoice() {
     } finally { setBusy(false); }
   }
 
-  async function createAnotherAccount() {
+  async function switchAccount() {
     setBusy(true); setError('');
     try {
       await post('/api/auth/logout');
-      try { sessionStorage.setItem('crashout.link.createConfirmed', '1'); } catch { /* ignore */ }
+      try { sessionStorage.setItem('crashout.link.authConfirmed', '1'); } catch { /* ignore */ }
       setSession(null);
-      navigate('/auth?mode=signup&next=%2F', { replace: true });
+      navigate(flow === 'create' ? '/auth?mode=signup&next=%2F' : '/auth?next=%2F', { replace: true });
     } catch (e) {
       setError((e as ApiError).message || 'Could not safely sign out. Try again.');
     } finally { setBusy(false); }
   }
 
   if (!session) {
-    queueMicrotask(() => navigate('/auth?mode=signup&next=%2F', { replace: true }));
+    queueMicrotask(() => navigate(flow === 'create' ? '/auth?mode=signup&next=%2F' : '/auth?next=%2F', { replace: true }));
     return <Loading />;
   }
 
   return (
     <main className="social-page">
-      <div className="eyebrow">CRASHOUT CONNECTION / NEW ACCOUNT</div>
+      <div className="eyebrow">CRASHOUT CONNECTION / ACCOUNT SELECTION</div>
       <h1>ALREADY <em>SIGNED IN.</em></h1>
       <p className="social-lead">
         SHYST is currently signed in as <b>{session.user.name}</b> (Player #{session.user.tag}).
-        You chose to create a new SHYST account from Crashout. Choose whether to connect this
-        current player or sign out and create a separate SHYST player. Nothing is merged.
+        {flow === 'create' ? ' You chose to create a new SHYST account from Crashout.' : ' You chose to link an existing SHYST account from Crashout.'}
+        {' '}Choose whether to connect this current player or sign out and use a different SHYST account. Nothing is merged.
       </p>
       {error && <div className="auth-error" role="alert">{error}</div>}
       <div className="settings-card">
         <button className="primary" disabled={busy || !token} onClick={() => void useCurrentAccount()}>
           {busy ? 'WORKING...' : 'USE THIS SHYST ACCOUNT'}
         </button>
-        <button className="social-action" disabled={busy} onClick={() => void createAnotherAccount()}>
-          SIGN OUT & CREATE A NEW ACCOUNT
+        <button className="social-action" disabled={busy} onClick={() => void switchAccount()}>
+          {flow === 'create' ? 'SIGN OUT & CREATE A NEW ACCOUNT' : 'SIGN OUT & CHOOSE ANOTHER ACCOUNT'}
         </button>
       </div>
     </main>
@@ -160,12 +161,12 @@ function Routes() {
     let token = '';
     try { token = sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return; }
     let flow = 'existing';
-    let createConfirmed = false;
+    let authConfirmed = false;
     try {
       flow = sessionStorage.getItem('crashout.link.flow') ?? 'existing';
-      createConfirmed = sessionStorage.getItem('crashout.link.createConfirmed') === '1';
+      authConfirmed = sessionStorage.getItem('crashout.link.authConfirmed') === '1';
     } catch { /* ignore */ }
-    if (flow === 'create' && !createConfirmed) {
+    if (!authConfirmed) {
       navigate('/connect/crashout', { replace: true });
       return;
     }
@@ -178,7 +179,7 @@ function Routes() {
         try {
           sessionStorage.removeItem('crashout.link.token');
           sessionStorage.removeItem('crashout.link.flow');
-          sessionStorage.removeItem('crashout.link.createConfirmed');
+          sessionStorage.removeItem('crashout.link.authConfirmed');
         } catch { /* tab storage may be unavailable */ }
         linkInFlight.current = null;
       });
@@ -207,9 +208,7 @@ function Routes() {
       let createFlow = false;
       try { createFlow = sessionStorage.getItem('crashout.link.flow') === 'create'; } catch { /* ignore */ }
       const mode = createFlow ? 'mode=signup&' : '';
-      if (createFlow) {
-        try { sessionStorage.setItem('crashout.link.createConfirmed', '1'); } catch { /* ignore */ }
-      }
+      try { sessionStorage.setItem('crashout.link.authConfirmed', '1'); } catch { /* ignore */ }
       queueMicrotask(() => navigate(`/auth?${mode}next=${next}`, { replace: true }));
       return <Loading />;
     }
