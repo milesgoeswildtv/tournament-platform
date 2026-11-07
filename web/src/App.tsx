@@ -151,6 +151,7 @@ function Routes() {
     try {
       sessionStorage.setItem('crashout.link.token', incomingLinkToken);
       sessionStorage.setItem('crashout.link.flow', fragment.get('crashout_flow') === 'create' ? 'create' : 'existing');
+      sessionStorage.removeItem('crashout.link.authConfirmed');
     } catch {
       // If tab storage is unavailable, the user can restart linking from Crashout.
     }
