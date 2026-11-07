@@ -11,6 +11,10 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   /** Owner-only secret required to issue SHYST admin keys. */
   SHYST_KEY_ISSUER_SECRET?: string;
+  /** Server-only credential shared with the Crashout account-link gateway. */
+  CRASHOUT_SHYST_ADAPTER_KEY?: string;
+  /** Optional gateway override for isolated staging and integration tests. */
+  CRASHOUT_LINK_GATEWAY_URL?: string;
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_BOT_USERNAME?: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
