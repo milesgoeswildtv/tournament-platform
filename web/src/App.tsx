@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { RouterProvider, match, navigate, useLocation } from './lib/router';
-import { get, useSession, updateUser } from './lib/api';
+import { get, post, useSession, updateUser, type ApiError } from './lib/api';
 import { bootTelegram, inTelegram } from './lib/telegram';
 import { AppShell, OfflineBanner, Toasts } from './ui/shell';
 import { Loading } from './ui/layout';
 import { music } from './lib/music';
+import { toast } from './lib/toast';
 import { AuthScreen } from './screens/AuthScreen';
 import { DiscordScreen } from './screens/DiscordScreen';
 import { HubScreen } from './screens/HubScreen';
@@ -74,6 +75,40 @@ function Routes() {
   const { path } = useLocation();
   const [booting, setBooting] = useState(inTelegram());
   const unread = useUnread(!!session, path);
+  const linkInFlight = useRef<string | null>(null);
+
+  // The one-time token is carried in the URL fragment so it is never sent to
+  // the SHYST web server or included in HTTP referrers. Move it to tab-scoped
+  // storage before the protected-route redirect can replace the URL.
+  const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const incomingLinkToken = fragment.get('crashout_link');
+  if (incomingLinkToken && /^[a-f0-9]{64}$/.test(incomingLinkToken)) {
+    try {
+      sessionStorage.setItem('crashout.link.token', incomingLinkToken);
+      sessionStorage.setItem('crashout.link.flow', fragment.get('crashout_flow') === 'create' ? 'create' : 'existing');
+    } catch {
+      // If tab storage is unavailable, the user can restart linking from Crashout.
+    }
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+
+  useEffect(() => {
+    if (!session) return;
+    let token = '';
+    try { token = sessionStorage.getItem('crashout.link.token') ?? ''; } catch { return; }
+    if (!token || linkInFlight.current === token) return;
+    linkInFlight.current = token;
+    post<{ ok: boolean; linked: boolean }>('/api/me/crashout/link', { token })
+      .then(() => toast('Your SHYST account is now connected to Crashout.', 'good'))
+      .catch((error) => toast((error as ApiError).message || 'Crashout could not complete the account link. Start again from the hub.', 'error'))
+      .finally(() => {
+        try {
+          sessionStorage.removeItem('crashout.link.token');
+          sessionStorage.removeItem('crashout.link.flow');
+        } catch { /* tab storage may be unavailable */ }
+        linkInFlight.current = null;
+      });
+  }, [session?.user.id]);
 
   useEffect(() => {
     if (!path.startsWith('/t/') || path.slice(3).includes('/')) music.setScreen('lobby');
@@ -95,7 +130,10 @@ function Routes() {
     if (!params) continue;
     if (!r.public && !session) {
       const next = encodeURIComponent(window.location.pathname + window.location.search);
-      queueMicrotask(() => navigate(`/auth?next=${next}`, { replace: true }));
+      let createFlow = false;
+      try { createFlow = sessionStorage.getItem('crashout.link.flow') === 'create'; } catch { /* ignore */ }
+      const mode = createFlow ? 'mode=signup&' : '';
+      queueMicrotask(() => navigate(`/auth?${mode}next=${next}`, { replace: true }));
       return <Loading />;
     }
     const body = r.render(params);
