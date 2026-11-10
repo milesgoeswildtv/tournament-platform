@@ -123,14 +123,15 @@ jobs:
           VITE_API_URL="${{ steps.urls.outputs.api }}" npm run build:web
           npx wrangler pages deploy web/dist --project-name "$PAGES_PROJECT" --branch main --commit-dirty=true
 
-      - name: Verify deployment
+      - name: Verify deployment and Crashout adapter binding
         if: steps.creds.outputs.ok == 'true'
         run: |
           sleep 10
           curl -fsS "${{ steps.urls.outputs.api }}/api/health" | tee health.json
-          jq -e '.ok == true and .env == "production"' health.json
+          jq -e '.ok == true and .env == "production" and .integrations.crashoutLinkAdapterConfigured == true' health.json
           curl -fsS "${{ steps.urls.outputs.app }}/" | grep -q '<title>SHYST</title>'
           curl -fsS -o /dev/null -w '%{http_code}\n' -X OPTIONS -H "Origin: ${{ steps.urls.outputs.app }}" -H 'Access-Control-Request-Method: POST' "${{ steps.urls.outputs.api }}/api/auth/login"
           echo "### Deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "- App: ${{ steps.urls.outputs.app }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- API: ${{ steps.urls.outputs.api }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Crashout adapter binding: configured (boolean readiness check; no secret value emitted)" >> "$GITHUB_STEP_SUMMARY"

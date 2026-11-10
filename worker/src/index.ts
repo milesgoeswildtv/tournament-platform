@@ -26,7 +26,17 @@ import {
 export { TournamentRoom } from './room';
 
 const router = new Router()
-  .get('/api/health', ({ env }) => json({ ok: true, env: env.ENVIRONMENT, time: Date.now(), telegram: !!env.TELEGRAM_BOT_TOKEN }))
+  .get('/api/health', ({ env }) => json({
+    ok: true,
+    env: env.ENVIRONMENT,
+    time: Date.now(),
+    telegram: !!env.TELEGRAM_BOT_TOKEN,
+    integrations: {
+      crashoutLinkAdapterConfigured: Boolean(
+        env.CRASHOUT_SHYST_ADAPTER_KEY && env.CRASHOUT_SHYST_ADAPTER_KEY.length >= 32,
+      ),
+    },
+  }))
   .get('/api/games', () => json({ games: Object.values(GAME_META) }))
   // accounts
   .post('/api/auth/register', register)
