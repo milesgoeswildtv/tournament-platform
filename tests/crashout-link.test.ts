@@ -41,6 +41,25 @@ after(async () => {
 });
 
 describe('Crashout SHYST adapter', () => {
+  test('health reports adapter readiness without disclosing secret material', async () => {
+    const response = await fetch(`${server.url}/api/health`);
+    const health = await response.json() as any;
+    assert.equal(response.status, 200);
+    assert.equal(health.integrations.crashoutLinkAdapterConfigured, true);
+    assert.ok(!JSON.stringify(health).includes(ADAPTER_KEY));
+
+    const key = (server.env as any).CRASHOUT_SHYST_ADAPTER_KEY;
+    delete (server.env as any).CRASHOUT_SHYST_ADAPTER_KEY;
+    try {
+      const missingResponse = await fetch(`${server.url}/api/health`);
+      const missingHealth = await missingResponse.json() as any;
+      assert.equal(missingHealth.integrations.crashoutLinkAdapterConfigured, false);
+      assert.ok(!JSON.stringify(missingHealth).includes(ADAPTER_KEY));
+    } finally {
+      (server.env as any).CRASHOUT_SHYST_ADAPTER_KEY = key;
+    }
+  });
+
   test('requires a valid SHYST session before contacting Crashout', async () => {
     const anonymous = new Client(server.url, 'anonymous');
     const response = await anonymous.api('POST', '/api/me/crashout/link', { token: TOKEN });
