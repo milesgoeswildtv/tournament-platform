@@ -1,4 +1,5 @@
 name: CI / Deploy
+# Production redeploy trigger: no application-code changes.
 
 on:
   push:
