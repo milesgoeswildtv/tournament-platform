@@ -16,7 +16,7 @@ const redirect = (to: string) => new Response(null, { status: 302, headers: { lo
 const enc = new TextEncoder();
 const DEFAULT_OIDC_ISSUER = 'https://qcmfnkuyinhfdxnuvneb.supabase.co/auth/v1';
 const DEFAULT_OIDC_CLIENT_ID = 'd124a047-76cc-46aa-9ad4-f22caddaae2e';
-const oidcIssuer = (env: Env) => (env.CRASHOUT_OIDC_ISSUER || DEFAULT_OIDC_ISSUER).replace(/\\/$/, '');
+const oidcIssuer = (env: Env) => (env.CRASHOUT_OIDC_ISSUER || DEFAULT_OIDC_ISSUER).replace(/\/$/, '');
 const oidcClientId = (env: Env) => env.CRASHOUT_OIDC_CLIENT_ID || DEFAULT_OIDC_CLIENT_ID;
 export function crashoutSsoMissing(env: Env): string[] {
   return [
@@ -26,7 +26,7 @@ export function crashoutSsoMissing(env: Env): string[] {
 }
 const decode = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
 const decodeJson = (s: string) => JSON.parse(new TextDecoder().decode(decode(s)));
-const origin = (env: Env) => env.CRASHOUT_OIDC_ISSUER!.replace(/\/$/, '');
+const origin = oidcIssuer;
 const callbackUri = (env: Env, req: Request) => env.CRASHOUT_OIDC_REDIRECT_URI || new URL('/api/auth/crashout/callback', req.url).toString();
 
 type Discovery = { issuer: string; authorization_endpoint: string; token_endpoint: string; jwks_uri: string };
