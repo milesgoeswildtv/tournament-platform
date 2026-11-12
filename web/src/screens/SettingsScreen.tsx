@@ -19,7 +19,7 @@ export function SettingsScreen() {
   const player = useSyncExternalStore(music.subscribe, music.getSnapshot, music.getSnapshot);
   const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null }; password: { configured: boolean; handle: string | null } }>('/api/me'));
   const { search } = useLocation();
-  const providers = useLoad(() => get<{ crashout: boolean }>('/api/auth/providers'));
+  const providers = useLoad(() => get<{ crashout: boolean; crashoutMissing?: string[] }>('/api/auth/providers'));
   const [crashoutBusy, setCrashoutBusy] = useState(false);
   const crashoutResult = search.get('crashout');
   useEffect(() => {
@@ -271,7 +271,7 @@ export function SettingsScreen() {
             try { const r = await post<{ url: string }>("/api/auth/crashout/start", { purpose: "link" }); window.location.assign(r.url); }
             catch (e2) { toast((e2 as ApiError).message, "error"); setCrashoutBusy(false); }
           }}>Link CRASHOUT account</Button>
-        ) : <Chip tone="muted">CRASHOUT SSO not configured on this server</Chip>}
+        )  : <Stack gap={1}><Chip tone="muted">CRASHOUT connection unavailable</Chip><Text tone="dust" size="sm">Server configuration missing: {(providers.data?.crashoutMissing ?? ['unknown']).join(', ')}.</Text></Stack>}
       </Section>
 
       <Section title="Discord">

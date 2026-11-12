@@ -14,14 +14,24 @@ const TICKET_TTL = 2 * 60_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const redirect = (to: string) => new Response(null, { status: 302, headers: { location: to, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
 const enc = new TextEncoder();
+const DEFAULT_OIDC_ISSUER = 'https://qcmfnkuyinhfdxnuvneb.supabase.co/auth/v1';
+const DEFAULT_OIDC_CLIENT_ID = 'd124a047-76cc-46aa-9ad4-f22caddaae2e';
+const oidcIssuer = (env: Env) => (env.CRASHOUT_OIDC_ISSUER || DEFAULT_OIDC_ISSUER).replace(/\/$/, '');
+const oidcClientId = (env: Env) => env.CRASHOUT_OIDC_CLIENT_ID || DEFAULT_OIDC_CLIENT_ID;
+export function crashoutSsoMissing(env: Env): string[] {
+  return [
+    ...(!env.CRASHOUT_OIDC_CLIENT_SECRET ? ['CRASHOUT_OIDC_CLIENT_SECRET'] : []),
+    ...(!env.CRASHOUT_SHYST_ADAPTER_KEY ? ['CRASHOUT_SHYST_ADAPTER_KEY'] : []),
+  ];
+}
 const decode = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
 const decodeJson = (s: string) => JSON.parse(new TextDecoder().decode(decode(s)));
-const origin = (env: Env) => env.CRASHOUT_OIDC_ISSUER!.replace(/\/$/, '');
+const origin = oidcIssuer;
 const callbackUri = (env: Env, req: Request) => env.CRASHOUT_OIDC_REDIRECT_URI || new URL('/api/auth/crashout/callback', req.url).toString();
 
 type Discovery = { issuer: string; authorization_endpoint: string; token_endpoint: string; jwks_uri: string };
 async function discovery(env: Env): Promise<Discovery> {
-  if (!env.CRASHOUT_OIDC_ISSUER || !env.CRASHOUT_OIDC_CLIENT_ID || !env.CRASHOUT_OIDC_CLIENT_SECRET || !env.CRASHOUT_SHYST_ADAPTER_KEY) {
+  if (crashoutSsoMissing(env).length) {
     throw new HttpError(503, 'crashout_sso_not_configured', 'CRASHOUT sign-in is not configured on this SHYST environment yet.');
   }
   const issuer = origin(env);
@@ -57,7 +67,7 @@ export async function crashoutStart(c: RouteCtx): Promise<Response> {
   const d = await discovery(c.env);
   const tx = await createTransaction(c.env, purpose, user?.id ?? null);
   const q = new URLSearchParams({
-    client_id: c.env.CRASHOUT_OIDC_CLIENT_ID!,
+    client_id: oidcClientId(c.env),
     response_type: 'code',
     redirect_uri: callbackUri(c.env, c.req),
     scope: 'openid',
@@ -90,7 +100,7 @@ async function exchangeCode(env: Env, req: Request, code: string, verifier: stri
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
       accept: 'application/json',
-      authorization: `Basic ${btoa(`${env.CRASHOUT_OIDC_CLIENT_ID}:${env.CRASHOUT_OIDC_CLIENT_SECRET}`)}`,
+      authorization: `Basic ${btoa(`${oidcClientId(env)}:${env.CRASHOUT_OIDC_CLIENT_SECRET}`)}`,
     },
     body: form,
     signal: AbortSignal.timeout(10_000),
@@ -122,7 +132,7 @@ async function verifyIdToken(token: string, d: Discovery, env: Env, nonceHash: s
     key, decode(parts[2]), enc.encode(`${parts[0]}.${parts[1]}`),
   );
   const aud = claims.aud;
-  const audienceOk = aud === env.CRASHOUT_OIDC_CLIENT_ID || (Array.isArray(aud) && aud.includes(env.CRASHOUT_OIDC_CLIENT_ID));
+  const audienceOk = aud === oidcClientId(env) || (Array.isArray(aud) && aud.includes(oidcClientId(env)));
   const current = Math.floor(Date.now() / 1000);
   const nonce = typeof claims.nonce === 'string' ? claims.nonce : '';
   if (!signatureValid || claims.iss !== d.issuer || !audienceOk || typeof claims.sub !== 'string' || !UUID.test(claims.sub)
@@ -130,7 +140,7 @@ async function verifyIdToken(token: string, d: Discovery, env: Env, nonceHash: s
       || typeof claims.iat !== 'number' || claims.iat > current + 5 || claims.iat < current - 600
       || (typeof claims.nbf === 'number' && claims.nbf > current + 5)
       || await sha256Hex(nonce) !== nonceHash) throw new Error('oidc_claim_validation_failed');
-  if (Array.isArray(aud) && aud.length > 1 && claims.azp !== env.CRASHOUT_OIDC_CLIENT_ID) throw new Error('oidc_azp_invalid');
+  if (Array.isArray(aud) && aud.length > 1 && claims.azp !== oidcClientId(env)) throw new Error('oidc_azp_invalid');
   return claims.sub;
 }
 
