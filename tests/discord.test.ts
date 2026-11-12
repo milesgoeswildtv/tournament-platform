@@ -110,7 +110,7 @@ after(async () => {
 describe('Discord sign-in', () => {
   test('providers endpoint reports Discord; the client secret is never sent to the browser', async () => {
     const p = await new Client(s.url, 'x').api('GET', '/api/auth/providers');
-    assert.deepEqual(p.data, { discord: true, crashout: false, telegram: { enabled: true, bot: 'shyst_bot' } });
+    assert.deepEqual(p.data, { discord: true, crashout: false, crashoutMissing: ['CRASHOUT_OIDC_CLIENT_SECRET', 'CRASHOUT_SHYST_ADAPTER_KEY'], telegram: { enabled: true, bot: 'shyst_bot' } });
     const st = await new Client(s.url, 'x').api('POST', '/api/auth/discord/start', { mode: 'login' });
     assert.ok(!JSON.stringify(st.data).includes(SECRET));
   });
