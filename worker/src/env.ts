@@ -11,6 +11,13 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   /** Owner-only secret required to issue SHYST admin keys. */
   SHYST_KEY_ISSUER_SECRET?: string;
+  /** CRASHOUT OIDC issuer, e.g. the hosted Supabase Auth issuer. */
+  CRASHOUT_OIDC_ISSUER?: string;
+  CRASHOUT_OIDC_CLIENT_ID?: string;
+  CRASHOUT_OIDC_CLIENT_SECRET?: string;
+  CRASHOUT_OIDC_REDIRECT_URI?: string;
+  /** Supabase Edge Functions base URL for private identity endpoints. */
+  CRASHOUT_IDENTITY_API_URL?: string;
   /** Server-only credential shared with the Crashout account-link gateway. */
   CRASHOUT_SHYST_ADAPTER_KEY?: string;
   /** Optional gateway override for isolated staging and integration tests. */
