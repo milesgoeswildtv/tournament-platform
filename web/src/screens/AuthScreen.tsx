@@ -15,6 +15,15 @@ export function AuthScreen() {
   const session = useSession();
   const { search } = useLocation();
   const next = search.get('next') || '/';
+  const crashoutResult = search.get('crashout');
+  useEffect(() => {
+    if (!crashoutResult) return;
+    const message = crashoutResult === 'denied' ? 'CRASHOUT authorization was cancelled.' : crashoutResult === 'expired' ? 'CRASHOUT sign-in expired. Start again.' : 'CRASHOUT sign-in could not be verified. No SHYST account was changed.';
+    toast(message, crashoutResult === 'denied' ? 'info' : 'error');
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('crashout');
+    window.history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+  }, [crashoutResult]);
   const [mode, setMode] = useState<'signin' | 'signup'>(search.get('mode') === 'signup' ? 'signup' : 'signin');
   const [handle, setHandle] = useState('');
   const [name, setName] = useState('');
