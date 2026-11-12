@@ -1,7 +1,7 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
-import { createSign, generateKeyPairSync, randomUUID } from 'node:crypto';
+import { createHash, createSign, generateKeyPairSync, randomUUID } from 'node:crypto';
 import { startDevServer, type DevServer } from '../dev/server';
 import { Client } from './support/client';
 
@@ -18,7 +18,7 @@ let server: DevServer;
 let mappedPlayerId: string | null = null;
 let codeCounter = 0;
 let badSignature = false;
-const nonceByCode = new Map<string, string>();
+const codeData = new Map<string, { nonce: string; challenge: string }>();
 const claims: { external_player_id: string; game_key: string }[] = [];
 
 function signedIdToken(nonce: string) {
@@ -58,9 +58,11 @@ before(async () => {
       const expected = `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`;
       if (req.headers.authorization !== expected) return send(401, { error: 'invalid_client' });
       const code = form.get('code') ?? '';
-      const nonce = nonceByCode.get(code);
-      if (!nonce || form.get('grant_type') !== 'authorization_code' || !form.get('code_verifier')) return send(400, { error: 'invalid_grant' });
-      return send(200, { access_token: 'test-access-token', token_type: 'bearer', id_token: signedIdToken(nonce) });
+      const data = codeData.get(code);
+      const verifier = form.get('code_verifier') ?? '';
+      const challenge = createHash('sha256').update(verifier).digest('base64url');
+      if (!data || form.get('grant_type') !== 'authorization_code' || challenge !== data.challenge || form.get('redirect_uri') !== `${server.url}/api/auth/crashout/callback`) return send(400, { error: 'invalid_grant' });
+      return send(200, { access_token: 'test-access-token', token_type: 'bearer', id_token: signedIdToken(data.nonce) });
     }
     if (req.method === 'POST' && req.url === '/functions/v1/resolve-destination-identity') {
       const body = JSON.parse(raw);
@@ -103,7 +105,7 @@ async function authorize(purpose: 'link' | 'sign_in', player?: Client) {
   assert.equal(authUrl.searchParams.get('code_challenge_method'), 'S256');
   assert.ok(authUrl.searchParams.get('code_challenge'));
   const code = `test-code-${++codeCounter}`;
-  nonceByCode.set(code, authUrl.searchParams.get('nonce')!);
+  codeData.set(code, { nonce: authUrl.searchParams.get('nonce')!, challenge: authUrl.searchParams.get('code_challenge')! });
   const callback = await fetch(`${server.url}/api/auth/crashout/callback?${new URLSearchParams({ code, state: authUrl.searchParams.get('state')! })}`, { redirect: 'manual' });
   assert.equal(callback.status, 302);
   return { location: callback.headers.get('location') ?? '', state: authUrl.searchParams.get('state')! };
@@ -174,7 +176,7 @@ describe('CRASHOUT OIDC staging flow', () => {
     const start = await player.api('POST', '/api/auth/crashout/start', { purpose: 'sign_in' });
     const authUrl = new URL(start.data.url);
     const code = `test-code-${++codeCounter}`;
-    nonceByCode.set(code, authUrl.searchParams.get('nonce')!);
+    codeData.set(code, { nonce: authUrl.searchParams.get('nonce')!, challenge: authUrl.searchParams.get('code_challenge')! });
     badSignature = true;
     try {
       const callback = await fetch(`${server.url}/api/auth/crashout/callback?${new URLSearchParams({ code, state: authUrl.searchParams.get('state')! })}`, { redirect: 'manual' });
