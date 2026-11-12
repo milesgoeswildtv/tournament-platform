@@ -27,7 +27,8 @@
     "check:design": "node scripts/check-css.mjs",
     "icons": "node --import tsx scripts/icons.ts",
     "test:discord-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-discord.ts",
-    "test:crashout-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-crashout-link.ts"
+    "test:crashout-ui": "node --experimental-sqlite --no-warnings --import tsx scripts/e2e-crashout-link.ts",
+    "build": "wrangler deploy --dry-run"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -47,5 +48,7 @@
     "ws": "^8.18.0",
     "playwright": "^1.50.0"
   },
-  "engines": { "node": ">=22.5" }
+  "engines": {
+    "node": ">=22.5"
+  }
 }
