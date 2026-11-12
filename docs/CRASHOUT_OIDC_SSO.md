@@ -47,7 +47,7 @@ Configure these values on a dedicated staging Worker first:
 
 - `CRASHOUT_OIDC_ISSUER`: exact `issuer` value from the CRASHOUT OIDC discovery document (not the project dashboard URL).
 - `CRASHOUT_OIDC_CLIENT_ID`: confidential SHYST OAuth client ID registered in CRASHOUT.
-- `CRASHOUT_OIDC_CLIENT_SECRET`: confidential client secret; Worker secret only.
+- `CRASHOUT_OIDC_CLIENT_SECRET`: confidential client secret; Worker secret only. Register the OAuth client with `client_secret_basic` (the Supabase confidential-client default); the Worker uses HTTP Basic authentication at the token endpoint.
 - `CRASHOUT_OIDC_REDIRECT_URI`: exact staging Worker callback URL, `https://<staging-worker-host>/api/auth/crashout/callback`.
 - `CRASHOUT_SHYST_ADAPTER_KEY`: high-entropy server-only key whose SHA-256 digest is configured for the SHYST destination in CRASHOUT.
 - `CRASHOUT_IDENTITY_API_URL`: optional; defaults to the CRASHOUT Supabase Edge Functions base URL.
