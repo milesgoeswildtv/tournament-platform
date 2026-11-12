@@ -41,7 +41,7 @@ async function createTransaction(env: Env, purpose: 'legacy_claim' | 'sign_in', 
   const state = b64url(randomBytes(32));
   const nonce = b64url(randomBytes(32));
   const verifier = b64url(randomBytes(48));
-  const challenge = b64url(await crypto.subtle.digest('SHA-256', enc.encode(verifier)));
+  const challenge = b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(verifier))));
   const t = now();
   await env.DB.prepare('INSERT INTO crashout_oidc_transactions (state_hash,user_id,nonce_hash,code_verifier,purpose,created_at,expires_at) VALUES (?,?,?,?,?,?,?)')
     .bind(await sha256Hex(state), userId, await sha256Hex(nonce), verifier, purpose, t, t + TX_TTL).run();
