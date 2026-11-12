@@ -184,7 +184,7 @@ async function finishSignIn(c: RouteCtx, subject: string, idToken: string, nonce
   }
   if (!user) throw new HttpError(500, 'shyst_account_creation_failed');
   const ticket = await putTicket(c.env, user.id);
-  return redirect(`${c.env.APP_URL.replace(/\/$/, '')}/auth/crashout#ticket=${encodeURIComponent(ticket)}`);
+  return redirect(`${c.env.APP_URL.replace(/\/$/, '')}/auth#crashout-ticket=${encodeURIComponent(ticket)}`);
 }
 
 export async function crashoutCallback(c: RouteCtx): Promise<Response> {
