@@ -1,7 +1,7 @@
 import { GAME_META } from '../../shared/src/index';
 import { login, logout, register, setPasswordLogin, startTelegramLink, telegramAuth, updateMe } from './auth';
 import { completeCrashoutLink } from './crashout-link';
-import { crashoutCallback, crashoutExchange, crashoutStart } from './crashout-oidc';
+import { crashoutCallback, crashoutExchange, crashoutSsoMissing, crashoutStart } from './crashout-oidc';
 import { telegramWebhook } from './bot';
 import { discordCallback, discordComplete, discordConfigured, discordExchange, discordStart } from './discord';
 import type { Env } from './env';
@@ -35,7 +35,7 @@ const router = new Router()
   .post('/api/auth/logout', logout)
   .post('/api/auth/telegram', telegramAuth)
   .get('/api/auth/providers', ({ env }) =>
-    json({ discord: discordConfigured(env), crashout: !!(env.CRASHOUT_OIDC_ISSUER && env.CRASHOUT_OIDC_CLIENT_ID && env.CRASHOUT_OIDC_CLIENT_SECRET && env.CRASHOUT_SHYST_ADAPTER_KEY), telegram: { enabled: !!env.TELEGRAM_BOT_TOKEN, bot: env.TELEGRAM_BOT_USERNAME ?? null } }),
+    json({ discord: discordConfigured(env), crashout: crashoutSsoMissing(env).length === 0, crashoutMissing: crashoutSsoMissing(env), telegram: { enabled: !!env.TELEGRAM_BOT_TOKEN, bot: env.TELEGRAM_BOT_USERNAME ?? null } }),
   )
   .post('/api/auth/discord/start', discordStart)
   .get('/api/auth/discord/callback', discordCallback)
