@@ -83,13 +83,15 @@ async function exchangeCode(env: Env, req: Request, code: string, verifier: stri
     grant_type: 'authorization_code',
     code,
     redirect_uri: callbackUri(env, req),
-    client_id: env.CRASHOUT_OIDC_CLIENT_ID!,
-    client_secret: env.CRASHOUT_OIDC_CLIENT_SECRET!,
     code_verifier: verifier,
   });
   const res = await fetch(d.token_endpoint, {
     method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      accept: 'application/json',
+      authorization: `Basic ${btoa(`${env.CRASHOUT_OIDC_CLIENT_ID}:${env.CRASHOUT_OIDC_CLIENT_SECRET}`)}`,
+    },
     body: form,
     signal: AbortSignal.timeout(10_000),
   });
