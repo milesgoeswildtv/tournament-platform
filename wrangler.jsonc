@@ -8,8 +8,8 @@
   "observability": { "enabled": true },
   "vars": {
     "ENVIRONMENT": "production",
-    "APP_URL": "https://tournament-platform.pages.dev",
-    "ALLOWED_ORIGINS": "",
+    "APP_URL": "https://tournament-platform-9fd.pages.dev",
+    "ALLOWED_ORIGINS": "https://tournament-platform-9fd.pages.dev",
   },
   "d1_databases": [
     {
@@ -37,6 +37,6 @@
       "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "TournamentRoom" }] }
     }
   }
-  // Secrets (wrangler secret put …): TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, SHYST_KEY_ISSUER_SECRET, CRASHOUT_SHYST_ADAPTER_KEY.
-  // Plain vars you may add: TELEGRAM_BOT_USERNAME, TELEGRAM_MINIAPP_SHORTNAME.
+  // Secrets (wrangler secret put …): TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, SHYST_KEY_ISSUER_SECRET, CRASHOUT_SHYST_ADAPTER_KEY, CRASHOUT_OIDC_CLIENT_SECRET.
+  // Optional plain vars: TELEGRAM_BOT_USERNAME, TELEGRAM_MINIAPP_SHORTNAME. CRASHOUT_OIDC_CLIENT_ID may be set as a secret to override the built-in public client ID.
 }
