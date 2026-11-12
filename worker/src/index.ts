@@ -35,7 +35,7 @@ const router = new Router()
   .post('/api/auth/logout', logout)
   .post('/api/auth/telegram', telegramAuth)
   .get('/api/auth/providers', ({ env }) =>
-    json({ discord: discordConfigured(env), telegram: { enabled: !!env.TELEGRAM_BOT_TOKEN, bot: env.TELEGRAM_BOT_USERNAME ?? null } }),
+    json({ discord: discordConfigured(env), crashout: !!(env.CRASHOUT_OIDC_ISSUER && env.CRASHOUT_OIDC_CLIENT_ID && env.CRASHOUT_OIDC_CLIENT_SECRET && env.CRASHOUT_SHYST_ADAPTER_KEY), telegram: { enabled: !!env.TELEGRAM_BOT_TOKEN, bot: env.TELEGRAM_BOT_USERNAME ?? null } }),
   )
   .post('/api/auth/discord/start', discordStart)
   .get('/api/auth/discord/callback', discordCallback)
