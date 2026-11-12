@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ApiError, post, setSession, useSession, type User } from '../lib/api';
 import { navigate, useLocation } from '../lib/router';
 import { Button, Segmented, TextInput } from '../ui/controls';
@@ -15,6 +15,15 @@ export function AuthScreen() {
   const session = useSession();
   const { search } = useLocation();
   const next = search.get('next') || '/';
+  const crashoutResult = search.get('crashout');
+  useEffect(() => {
+    if (!crashoutResult) return;
+    const message = crashoutResult === 'denied' ? 'CRASHOUT authorization was cancelled.' : crashoutResult === 'expired' ? 'CRASHOUT sign-in expired. Start again.' : 'CRASHOUT sign-in could not be verified. No SHYST account was changed.';
+    toast(message, crashoutResult === 'denied' ? 'info' : 'error');
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('crashout');
+    window.history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+  }, [crashoutResult]);
   const [mode, setMode] = useState<'signin' | 'signup'>(search.get('mode') === 'signup' ? 'signup' : 'signin');
   const [handle, setHandle] = useState('');
   const [name, setName] = useState('');
@@ -23,7 +32,16 @@ export function AuthScreen() {
   const [err, setErr] = useState<{ field?: string; message: string } | null>(null);
   const [discordBusy, setDiscordBusy] = useState(false);
   const [telegramBusy, setTelegramBusy] = useState(false);
-  const providers = useLoad(() => get<{ discord: boolean; telegram: { enabled: boolean; bot: string | null } }>('/api/auth/providers'));
+  const [crashoutBusy, setCrashoutBusy] = useState(false);
+  useEffect(() => {
+    const match = window.location.hash.match(/(?:^#|&)crashout-ticket=([A-Za-z0-9_-]{40,64})/);
+    if (!match) return;
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    void post<{ token: string; user: User }>('/api/auth/crashout/exchange', { ticket: match[1] })
+      .then((r) => { setSession({ token: r.token, user: r.user }); navigate(next, { replace: true }); })
+      .catch((e) => toast((e as ApiError).message, 'error'));
+  }, []);
+  const providers = useLoad(() => get<{ discord: boolean; crashout: boolean; telegram: { enabled: boolean; bot: string | null } }>('/api/auth/providers'));
 
   if (session) {
     queueMicrotask(() => navigate(next, { replace: true }));
@@ -131,9 +149,16 @@ export function AuthScreen() {
         </Button>
         {linkingDiscord && <Note>Sign in to the SHYST player you already have. Your verified Discord account is attached to it as soon as you’re in.</Note>}
         {discordNote && <Text tone={discordNote.tone === 'good' ? 'go' : 'stop'} role="status">{discordNote.text}</Text>}
-        {p && (p.discord || p.telegram.bot) && !linkingDiscord && (
+        {p && (p.discord || p.crashout || p.telegram.bot) && !linkingDiscord && (
           <div className={s.providers}>
             <span className={s.providersRule}>or</span>
+            {p.crashout && (
+              <Button block busy={crashoutBusy} onClick={async () => {
+                setCrashoutBusy(true);
+                try { const r = await post<{ url: string }>('/api/auth/crashout/start', { purpose: 'sign_in' }); window.location.assign(r.url); }
+                catch (e2) { toast((e2 as ApiError).message, 'error'); setCrashoutBusy(false); }
+              }}>Continue with CRASHOUT</Button>
+            )}
             {p.discord && (
               <Button
                 icon="discord"
@@ -176,7 +201,7 @@ export function AuthScreen() {
               </Button>
             )}
             <Text tone="ash" size="sm">
-              On desktop or mobile web, Telegram opens the SHYST bot; tap Start, then choose Continue with Telegram in the Mini App. You can also use Discord or your username and password.
+              CRASHOUT is the network identity. Existing SHYST accounts can be linked from Settings; legacy SHYST sign-in remains available during the transition.
             </Text>
           </div>
         )}

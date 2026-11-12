@@ -19,6 +19,14 @@ export function SettingsScreen() {
   const player = useSyncExternalStore(music.subscribe, music.getSnapshot, music.getSnapshot);
   const me = useLoad(() => get<{ telegram: { configured: boolean; bot: string | null; linked: boolean; username: string | null }; discord: { configured: boolean; linked: boolean; username: string | null }; password: { configured: boolean; handle: string | null } }>('/api/me'));
   const { search } = useLocation();
+  const providers = useLoad(() => get<{ crashout: boolean }>('/api/auth/providers'));
+  const [crashoutBusy, setCrashoutBusy] = useState(false);
+  const crashoutResult = search.get('crashout');
+  useEffect(() => {
+    if (!crashoutResult) return;
+    toast(crashoutResult === 'linked' ? 'CRASHOUT identity linked to this SHYST player. Your player ID and history are unchanged.' : crashoutResult === 'expired' ? 'CRASHOUT link expired. Start again.' : 'CRASHOUT linking could not be completed. No SHYST account was changed.', crashoutResult === 'linked' ? 'good' : 'error');
+    navigate('/settings', { replace: true });
+  }, [crashoutResult]);
   const discordNote = DISCORD_RESULT[search.get('discord') ?? ''];
   useEffect(() => {
     if (!discordNote) return;
@@ -253,6 +261,17 @@ export function SettingsScreen() {
             )}
           </Stack>
         ) : null}
+      </Section>
+
+      <Section title="CRASHOUT identity">
+        <Text tone="dust">Link your CRASHOUT account to this existing SHYST player. Both accounts must be authenticated. This preserves your SHYST player ID, tournaments, prizes and admin status.</Text>
+        {providers.data?.crashout ? (
+          <Button busy={crashoutBusy} onClick={async () => {
+            setCrashoutBusy(true);
+            try { const r = await post<{ url: string }>("/api/auth/crashout/start", { purpose: "link" }); window.location.assign(r.url); }
+            catch (e2) { toast((e2 as ApiError).message, "error"); setCrashoutBusy(false); }
+          }}>Link CRASHOUT account</Button>
+        ) : <Chip tone="muted">CRASHOUT SSO not configured on this server</Chip>}
       </Section>
 
       <Section title="Discord">
