@@ -54,6 +54,9 @@ Configure these values on a dedicated staging Worker first:
 
 Register the exact callback URL in the CRASHOUT OAuth client's redirect allowlist. Enable the asymmetric signing/JWKS configuration and the custom access-token hook required by the CRASHOUT identity PR. The Worker pins the issuer from configuration, checks the discovery issuer and same-origin endpoints, validates RS256/ES256 signatures, audience, expiry, issued-at and nonce, and uses S256 PKCE.
 
+
+On the CRASHOUT Edge Functions environment, configure `CRASHOUT_OIDC_ISSUER` to the same issuer, `CRASHOUT_OIDC_CLIENT_ID_SHYST` to the same registered client ID, and `CRASHOUT_SHYST_ADAPTER_KEY_SHA256` to the lowercase hex SHA-256 digest of the raw SHYST adapter key. The raw adapter key belongs only in the SHYST Worker secret. The CRASHOUT function also uses its platform-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; neither belongs in SHYST.
+
 Do not put the client secret or adapter key in Pages variables, frontend code, GitHub source, or a browser request. Set them as Worker secrets. Do not configure these values on the production Worker until staging tests pass.
 
 ## Staging test sequence
