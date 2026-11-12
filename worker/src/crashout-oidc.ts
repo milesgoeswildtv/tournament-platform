@@ -128,6 +128,7 @@ async function verifyIdToken(token: string, d: Discovery, env: Env, nonceHash: s
   if (!signatureValid || claims.iss !== d.issuer || !audienceOk || typeof claims.sub !== 'string' || !UUID.test(claims.sub)
       || typeof claims.exp !== 'number' || claims.exp <= current - 5 || claims.exp > current + 3600
       || typeof claims.iat !== 'number' || claims.iat > current + 5 || claims.iat < current - 600
+      || (typeof claims.nbf === 'number' && claims.nbf > current + 5)
       || await sha256Hex(nonce) !== nonceHash) throw new Error('oidc_claim_validation_failed');
   if (Array.isArray(aud) && aud.length > 1 && claims.azp !== env.CRASHOUT_OIDC_CLIENT_ID) throw new Error('oidc_azp_invalid');
   return claims.sub;
@@ -206,6 +207,8 @@ export async function crashoutCallback(c: RouteCtx): Promise<Response> {
     const subject = await verifyIdToken(idToken, d, c.env, tx.nonce_hash);
     if (tx.purpose === 'legacy_claim') {
       if (!tx.user_id) throw new Error('claim_transaction_missing_user');
+      const owner = await c.env.DB.prepare('SELECT id FROM users WHERE id = ? AND merged_into IS NULL').bind(tx.user_id).first<{ id: string }>();
+      if (!owner) throw new Error('claim_owner_unavailable');
       const result = await callCrashout(c.env, 'claim-destination-identity', {
         game_key: 'shyst', external_player_id: tx.user_id, id_token: idToken, nonce: claims.nonce,
       });
